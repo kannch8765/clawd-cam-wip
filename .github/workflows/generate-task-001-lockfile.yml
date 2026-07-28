@@ -33,6 +33,9 @@ jobs:
           sed -i 's/run: npm install$/run: npm ci/' .github/workflows/deploy-pages.yml
           rm .github/workflows/generate-task-001-lockfile.yml
 
+      - name: Normalize formatting
+        run: npm run format
+
       - name: Verify clean install and quality gates
         run: |
           npm ci
