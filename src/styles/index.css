@@ -111,6 +111,26 @@ h1 {
   transform: scaleX(-1);
 }
 
+.overlay-interaction-layer {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.clawd-overlay {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  image-rendering: pixelated;
+}
+
 .camera-stage-message {
   position: absolute;
   inset: 0;
@@ -181,6 +201,34 @@ h1 {
 .camera-details {
   margin: 1rem 0 0;
   font-size: 0.9rem;
+}
+
+.overlay-controls {
+  margin-top: 1rem;
+  border-top: 1px solid #e4d7c5;
+  padding-top: 1rem;
+}
+
+.overlay-selection {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.overlay-selection span {
+  color: #7b6a57;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.overlay-selection strong {
+  color: #352d25;
+}
+
+.overlay-reset {
+  margin-top: 0.75rem;
 }
 
 @media (min-width: 721px) {
