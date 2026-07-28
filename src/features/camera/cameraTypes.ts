@@ -41,6 +41,14 @@ export interface CameraAdapter {
   ): Promise<VideoDimensions>;
 }
 
+export interface CameraCaptureSource {
+  requestId: number;
+  stream: MediaStream;
+  video: HTMLVideoElement;
+  facingMode: CameraFacingMode;
+  dimensions: VideoDimensions;
+}
+
 interface CameraStateBase {
   facingMode: CameraFacingMode;
 }
