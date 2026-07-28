@@ -9,8 +9,8 @@ export function CameraPlaceholder() {
         <h2 id="camera-heading">Camera workspace</h2>
         <p>
           This placeholder reserves the future camera surface while keeping
-          permissions, capture, storage, sharing, and official assets out of
-          the project foundation.
+          permissions, capture, storage, sharing, and official assets out of the
+          project foundation.
         </p>
       </div>
     </section>

@@ -39,17 +39,17 @@ Open the local URL printed by Vite.
 
 ## Commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Type-check and create a production build |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint with zero warnings allowed |
-| `npm run format` | Format supported files with Prettier |
+| Command                | Purpose                                  |
+| ---------------------- | ---------------------------------------- |
+| `npm run dev`          | Start the Vite development server        |
+| `npm run build`        | Type-check and create a production build |
+| `npm run preview`      | Preview the production build locally     |
+| `npm run lint`         | Run ESLint with zero warnings allowed    |
+| `npm run format`       | Format supported files with Prettier     |
 | `npm run format:check` | Verify formatting without changing files |
-| `npm run test` | Run the Vitest suite once |
-| `npm run test:watch` | Run Vitest in watch mode |
-| `npm run check` | Run lint, format check, tests, and build |
+| `npm run test`         | Run the Vitest suite once                |
+| `npm run test:watch`   | Run Vitest in watch mode                 |
+| `npm run check`        | Run lint, format check, tests, and build |
 
 ## PWA behavior
 
