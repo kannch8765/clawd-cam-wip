@@ -1,0 +1,5 @@
+
+> clawd-cam@0.1.0 format
+> prettier --write . --ignore-unknown
+
+sh: 1: prettier: not found
