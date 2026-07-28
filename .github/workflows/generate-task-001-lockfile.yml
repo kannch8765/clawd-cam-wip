@@ -32,11 +32,23 @@ jobs:
           npm pkg set 'scripts.format=prettier --write . --ignore-unknown'
           npm pkg set 'scripts.format:check=prettier --check . --ignore-unknown'
 
-      - name: Normalize and verify project
-        run: |
-          npm run format
-          npm ci
-          npm run check
+      - name: Normalize formatting
+        run: npm run format
+
+      - name: Verify clean install
+        run: npm ci
+
+      - name: Verify lint
+        run: npm run lint
+
+      - name: Verify formatting
+        run: npm run format:check
+
+      - name: Verify tests
+        run: npm run test
+
+      - name: Verify build
+        run: npm run build
 
       - name: Commit verified non-workflow changes
         run: |
