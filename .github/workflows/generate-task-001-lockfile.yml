@@ -1,0 +1,48 @@
+name: Generate Task 001 lockfile
+
+on:
+  push:
+    branches:
+      - task/001-project-foundation
+    paths:
+      - .github/workflows/generate-task-001-lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v6
+        with:
+          ref: task/001-project-foundation
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Apply reproducibility fixes
+        run: |
+          sed -i '/^package-lock\.json$/d' .prettierignore
+          sed -i 's/run: npm install$/run: npm ci/' .github/workflows/ci.yml
+          sed -i 's/run: npm install$/run: npm ci/' .github/workflows/deploy-pages.yml
+
+      - name: Verify clean install and quality gates
+        run: |
+          npm ci
+          npm run check
+
+      - name: Commit verified fix and remove generator
+        run: |
+          rm .github/workflows/generate-task-001-lockfile.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json .prettierignore .github/workflows/ci.yml .github/workflows/deploy-pages.yml .github/workflows/generate-task-001-lockfile.yml
+          git commit -m "fix: make dependency installs reproducible"
+          git push origin HEAD:task/001-project-foundation
