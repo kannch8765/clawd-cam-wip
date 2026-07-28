@@ -1,6 +1,9 @@
 import { browserCameraAdapter } from './cameraAdapter';
 import type { CameraAdapter, CameraState } from './cameraTypes';
 import { useCamera } from './useCamera';
+import { OverlayPreview } from '../overlay/OverlayPreview';
+import { REFERENCE_CLAWD_ASSET } from '../overlay/overlayAssets';
+import { useOverlayController } from '../overlay/useOverlayController';
 
 interface CameraViewProps {
   adapter?: CameraAdapter;
@@ -57,6 +60,7 @@ export function CameraView({
 }: CameraViewProps) {
   const { state, videoRef, startCamera, retry, switchCamera } =
     useCamera(adapter);
+  const { transform, updateTransform, resetTransform } = useOverlayController();
   const isReady = state.status === 'ready';
   const isMirrored = isReady && state.facingMode === 'user';
   const canSwitch = isReady && state.deviceCount > 1;
@@ -76,6 +80,13 @@ export function CameraView({
           playsInline
           autoPlay
         />
+        {isReady && (
+          <OverlayPreview
+            asset={REFERENCE_CLAWD_ASSET}
+            transform={transform}
+            onTransformChange={updateTransform}
+          />
+        )}
         {!isReady && (
           <div className="camera-stage-message" aria-live="polite">
             <span className="camera-glyph" aria-hidden="true">
@@ -118,10 +129,28 @@ export function CameraView({
         )}
 
         {isReady && (
-          <p className="camera-details">
-            {state.facingMode === 'user' ? 'Front' : 'Rear'} camera ·{' '}
-            {state.dimensions.width} × {state.dimensions.height}
-          </p>
+          <>
+            <p className="camera-details">
+              {state.facingMode === 'user' ? 'Front' : 'Rear'} camera ·{' '}
+              {state.dimensions.width} × {state.dimensions.height}
+            </p>
+            <div
+              className="overlay-controls"
+              aria-label="Clawd overlay controls"
+            >
+              <p className="overlay-selection">
+                <span>Selected overlay</span>
+                <strong>{REFERENCE_CLAWD_ASSET.label}</strong>
+              </p>
+              <button
+                className="secondary-action overlay-reset"
+                type="button"
+                onClick={resetTransform}
+              >
+                Reset Clawd
+              </button>
+            </div>
+          </>
         )}
 
         {(state.status === 'permission-denied' ||
