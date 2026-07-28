@@ -27,22 +27,22 @@ jobs:
       - name: Generate lockfile
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Apply reproducibility fixes
+      - name: Apply reproducibility fixes and remove generator
         run: |
           sed -i '/^package-lock\.json$/d' .prettierignore
           sed -i 's/run: npm install$/run: npm ci/' .github/workflows/ci.yml
           sed -i 's/run: npm install$/run: npm ci/' .github/workflows/deploy-pages.yml
+          rm .github/workflows/generate-task-001-lockfile.yml
 
       - name: Verify clean install and quality gates
         run: |
           npm ci
           npm run check
 
-      - name: Commit verified fix and remove generator
+      - name: Commit verified fix
         run: |
-          rm .github/workflows/generate-task-001-lockfile.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json .prettierignore .github/workflows/ci.yml .github/workflows/deploy-pages.yml .github/workflows/generate-task-001-lockfile.yml
+          git add -A
           git commit -m "fix: make dependency installs reproducible"
           git push origin HEAD:task/001-project-foundation
