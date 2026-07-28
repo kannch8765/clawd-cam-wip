@@ -12,7 +12,7 @@ import {
   type CameraAdapter,
   type CameraFacingMode,
 } from './cameraTypes';
-import { useCamera } from './useCamera';
+import { CAMERA_STARTUP_TIMEOUT_MS, useCamera } from './useCamera';
 
 class FakeTrack extends EventTarget {
   stop = vi.fn();
@@ -84,6 +84,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -232,6 +233,64 @@ describe('CameraView', () => {
       newRequest.resolve(newStream.stream);
       await newRequest.promise;
     });
+    await waitFor(() => expect(screen.getByText('ready')).toBeInTheDocument());
+
+    await act(async () => {
+      oldRequest.resolve(oldStream.stream);
+      await oldRequest.promise;
+    });
+
+    expect(screen.getByText('user')).toBeInTheDocument();
+    const preview = screen.getByTestId('harness-preview') as HTMLVideoElement;
+    expect(preview.srcObject).toBe(newStream.stream);
+    expect(oldStream.track.stop).toHaveBeenCalledTimes(1);
+    expect(newStream.track.stop).not.toHaveBeenCalled();
+  });
+
+  it('times out a camera request that never resolves and exposes retry', async () => {
+    vi.useFakeTimers();
+    const { stream } = createStream();
+    const adapter = createAdapter(stream, {
+      requestStream: vi.fn(() => new Promise<MediaStream>(() => undefined)),
+    });
+
+    render(<CameraView adapter={adapter} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start camera' }));
+
+    expect(screen.getByText('Opening camera…')).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(CAMERA_STARTUP_TIMEOUT_MS);
+    });
+
+    expect(
+      screen.getByText('Camera error', { selector: '.status-pill' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Try again' }),
+    ).toBeInTheDocument();
+  });
+
+  it('stops a stream that arrives after timeout without replacing newer state', async () => {
+    vi.useFakeTimers();
+    const oldRequest = deferred<MediaStream>();
+    const oldStream = createStream();
+    const newStream = createStream();
+    const adapter = createAdapter(newStream.stream, {
+      requestStream: vi
+        .fn<(facingMode: CameraFacingMode) => Promise<MediaStream>>()
+        .mockReturnValueOnce(oldRequest.promise)
+        .mockResolvedValueOnce(newStream.stream),
+    });
+
+    render(<CameraHarness adapter={adapter} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Request rear' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(CAMERA_STARTUP_TIMEOUT_MS);
+    });
+    expect(screen.getByText('runtime-error')).toBeInTheDocument();
+
+    vi.useRealTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Request front' }));
     await waitFor(() => expect(screen.getByText('ready')).toBeInTheDocument());
 
     await act(async () => {

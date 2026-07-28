@@ -7,6 +7,8 @@ import {
   type CameraState,
 } from './cameraTypes';
 
+export const CAMERA_STARTUP_TIMEOUT_MS = 20_000;
+
 const initialState: CameraState = {
   status: 'idle',
   facingMode: 'environment',
@@ -86,22 +88,28 @@ export function useCamera(adapter: CameraAdapter) {
       setState({ status: 'requesting', facingMode });
 
       let requestedStream: MediaStream | null = null;
+      const timeoutError = new CameraError(
+        'runtime-error',
+        'Camera startup timed out. Please try again.',
+      );
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-      try {
-        requestedStream = await adapter.requestStream(facingMode);
+      const startup = async () => {
+        const stream = await adapter.requestStream(facingMode);
+        requestedStream = stream;
 
         if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(requestedStream);
+          stopStreamOnce(stream);
           return;
         }
 
-        streamRef.current = requestedStream;
+        streamRef.current = stream;
 
         const handleTrackEnded = () => {
           if (
             !mountedRef.current ||
             requestIdRef.current !== requestId ||
-            streamRef.current !== requestedStream
+            streamRef.current !== stream
           ) {
             return;
           }
@@ -120,7 +128,7 @@ export function useCamera(adapter: CameraAdapter) {
           });
         };
 
-        const tracks = requestedStream.getTracks();
+        const tracks = stream.getTracks();
         for (const track of tracks) {
           track.addEventListener('ended', handleTrackEnded);
         }
@@ -133,7 +141,7 @@ export function useCamera(adapter: CameraAdapter) {
         const devices = await adapter.enumerateVideoInputs();
 
         if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(requestedStream);
+          stopStreamOnce(stream);
           return;
         }
 
@@ -150,7 +158,7 @@ export function useCamera(adapter: CameraAdapter) {
           );
         }
 
-        video.srcObject = requestedStream;
+        video.srcObject = stream;
         try {
           void video.play().catch(() => undefined);
         } catch {
@@ -163,7 +171,7 @@ export function useCamera(adapter: CameraAdapter) {
         );
 
         if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(requestedStream);
+          stopStreamOnce(stream);
           return;
         }
 
@@ -174,7 +182,32 @@ export function useCamera(adapter: CameraAdapter) {
           deviceCount: devices.length,
           dimensions,
         });
+      };
+
+      try {
+        await Promise.race([
+          startup(),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(
+              () => reject(timeoutError),
+              CAMERA_STARTUP_TIMEOUT_MS,
+            );
+          }),
+        ]);
       } catch (error) {
+        if (error === timeoutError) {
+          if (!mountedRef.current || requestIdRef.current !== requestId) {
+            return;
+          }
+
+          requestIdRef.current += 1;
+          abortControllerRef.current?.abort();
+          abortControllerRef.current = null;
+          releaseCurrentStream();
+          setState(errorState(timeoutError, facingMode));
+          return;
+        }
+
         if (!mountedRef.current || requestIdRef.current !== requestId) {
           if (requestedStream) {
             stopStreamOnce(requestedStream);
@@ -185,6 +218,10 @@ export function useCamera(adapter: CameraAdapter) {
         abortControllerRef.current = null;
         releaseCurrentStream();
         setState(errorState(mapCameraError(error), facingMode));
+      } finally {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
       }
     },
     [adapter, cancelCurrentRequest, releaseCurrentStream, stopStreamOnce],

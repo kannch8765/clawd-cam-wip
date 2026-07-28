@@ -43,7 +43,9 @@ A request becomes `ready` only after all of the following are true:
 3. The stream is attached to the muted, inline `<video>` element.
 4. Video metadata is available and both intrinsic dimensions are non-zero.
 
-Each request receives a monotonically increasing request ID and an abort signal. Starting another request invalidates the old one before stopping its stream. A late result is stopped once and cannot replace newer state.
+The complete startup sequence has a 20-second default deadline. A timeout invalidates the request, aborts metadata readiness, releases any active stream, enters a recoverable `runtime-error` state, and exposes retry. Because browsers cannot reliably cancel a pending `getUserMedia()` prompt, the original request coroutine remains responsible for stopping any stream that arrives after the deadline.
+
+Each request receives a monotonically increasing request ID and an abort signal. Starting another request or reaching the startup deadline invalidates the old request before stopping its stream. A late result is stopped once and cannot replace newer state.
 
 The lifecycle owner removes track listeners and stops every track before stream replacement, component unmount, or recovery from an error. Unexpected `ended` events move the state to `interrupted` and expose a restart action. This cleanup also makes React Strict Mode teardown safe.
 
