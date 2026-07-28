@@ -1,12 +1,54 @@
-import { browserCameraAdapter } from './cameraAdapter';
-import type { CameraAdapter, CameraState } from './cameraTypes';
-import { useCamera } from './useCamera';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { CaptureResult } from '../composition/CaptureResult';
+import { browserCompositionAdapter } from '../composition/captureAdapter';
+import type { CompositionAdapter } from '../composition/compositionTypes';
+import {
+  measureContentBox,
+  usePhotoCapture,
+} from '../composition/usePhotoCapture';
 import { OverlayPreview } from '../overlay/OverlayPreview';
 import { REFERENCE_CLAWD_ASSET } from '../overlay/overlayAssets';
 import { useOverlayController } from '../overlay/useOverlayController';
+import { browserCameraAdapter } from './cameraAdapter';
+import type { CameraAdapter, CameraState } from './cameraTypes';
+import { useCamera } from './useCamera';
 
 interface CameraViewProps {
   adapter?: CameraAdapter;
+  compositionAdapter?: CompositionAdapter;
+}
+
+function useStageContentBoxReady(
+  stageRef: RefObject<HTMLElement | null>,
+  refreshKey: string,
+): boolean {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) {
+      setIsReady(false);
+      return;
+    }
+
+    const update = () => {
+      const { width, height } = measureContentBox(stage);
+      setIsReady(width > 0 && height > 0);
+    };
+    update();
+
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(stage);
+    window.addEventListener('resize', update);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [refreshKey, stageRef]);
+
+  return isReady;
 }
 
 function statusLabel(state: CameraState): string {
@@ -57,20 +99,56 @@ function stateMessage(state: CameraState): string {
 
 export function CameraView({
   adapter = browserCameraAdapter,
+  compositionAdapter = browserCompositionAdapter,
 }: CameraViewProps) {
-  const { state, videoRef, startCamera, retry, switchCamera } =
-    useCamera(adapter);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const {
+    state,
+    videoRef,
+    startCamera,
+    retry,
+    switchCamera,
+    getCameraCaptureSource,
+    isCameraCaptureSourceCurrent,
+  } = useCamera(adapter);
   const { transform, updateTransform, resetTransform } = useOverlayController();
+  const photoCapture = usePhotoCapture({
+    asset: REFERENCE_CLAWD_ASSET,
+    transform,
+    stageRef,
+    getCameraCaptureSource,
+    isCameraCaptureSourceCurrent,
+    adapter: compositionAdapter,
+  });
   const isReady = state.status === 'ready';
+  const capturedState =
+    photoCapture.state.status === 'captured' ? photoCapture.state : null;
+  const isCaptured = capturedState !== null;
+  const isCapturing = photoCapture.state.status === 'capturing';
   const isMirrored = isReady && state.facingMode === 'user';
   const canSwitch = isReady && state.deviceCount > 1;
-  const previewClassName = isMirrored
-    ? 'camera-preview camera-preview--mirrored'
-    : 'camera-preview';
+  const isStageReady = useStageContentBoxReady(
+    stageRef,
+    `${state.status}:${photoCapture.state.status}`,
+  );
+  const captureSource = isReady ? getCameraCaptureSource() : null;
+  const canCapture =
+    captureSource !== null &&
+    isStageReady &&
+    photoCapture.isAssetReady &&
+    !isCapturing &&
+    !isCaptured;
+  const previewClassName = [
+    'camera-preview',
+    isMirrored ? 'camera-preview--mirrored' : '',
+    isCaptured ? 'camera-preview--hidden' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <section className="camera-card" aria-labelledby="camera-heading">
-      <div className="camera-stage">
+      <div ref={stageRef} className="camera-stage" data-testid="camera-stage">
         <video
           ref={videoRef}
           className={previewClassName}
@@ -80,14 +158,21 @@ export function CameraView({
           playsInline
           autoPlay
         />
-        {isReady && (
+        {isReady && !isCaptured && (
           <OverlayPreview
             asset={REFERENCE_CLAWD_ASSET}
             transform={transform}
             onTransformChange={updateTransform}
           />
         )}
-        {!isReady && (
+        {isCaptured && (
+          <img
+            className="capture-result-image"
+            src={capturedState?.objectUrl}
+            alt="Captured Clawd composition"
+          />
+        )}
+        {!isReady && !isCaptured && (
           <div className="camera-stage-message" aria-live="polite">
             <span className="camera-glyph" aria-hidden="true">
               ◉
@@ -95,71 +180,128 @@ export function CameraView({
             <strong>{statusLabel(state)}</strong>
           </div>
         )}
+        {isCapturing && (
+          <div className="capture-progress-overlay" role="status">
+            Composing photo…
+          </div>
+        )}
       </div>
 
       <div className="camera-copy">
-        <p className="status-pill">{statusLabel(state)}</p>
-        <h2 id="camera-heading">Camera workspace</h2>
-        <p>{stateMessage(state)}</p>
-
-        {state.status === 'idle' && (
-          <button
-            className="primary-action"
-            type="button"
-            onClick={() => void startCamera('environment')}
-          >
-            Start camera
-          </button>
-        )}
-
-        {state.status === 'requesting' && (
-          <p className="camera-progress" role="status">
-            Opening camera…
-          </p>
-        )}
-
-        {canSwitch && (
-          <button
-            className="secondary-action"
-            type="button"
-            onClick={switchCamera}
-          >
-            Switch to {state.facingMode === 'user' ? 'rear' : 'front'} camera
-          </button>
-        )}
-
-        {isReady && (
+        {isCaptured ? (
+          <CaptureResult
+            result={capturedState.result}
+            onRetake={photoCapture.retake}
+          />
+        ) : (
           <>
-            <p className="camera-details">
-              {state.facingMode === 'user' ? 'Front' : 'Rear'} camera ·{' '}
-              {state.dimensions.width} × {state.dimensions.height}
-            </p>
-            <div
-              className="overlay-controls"
-              aria-label="Clawd overlay controls"
-            >
-              <p className="overlay-selection">
-                <span>Selected overlay</span>
-                <strong>{REFERENCE_CLAWD_ASSET.label}</strong>
-              </p>
-              <button
-                className="secondary-action overlay-reset"
-                type="button"
-                onClick={resetTransform}
-              >
-                Reset Clawd
-              </button>
-            </div>
-          </>
-        )}
+            <p className="status-pill">{statusLabel(state)}</p>
+            <h2 id="camera-heading">Camera workspace</h2>
+            <p>{stateMessage(state)}</p>
 
-        {(state.status === 'permission-denied' ||
-          state.status === 'unavailable' ||
-          state.status === 'interrupted' ||
-          state.status === 'runtime-error') && (
-          <button className="primary-action" type="button" onClick={retry}>
-            {state.status === 'interrupted' ? 'Restart camera' : 'Try again'}
-          </button>
+            {state.status === 'idle' && (
+              <button
+                className="primary-action"
+                type="button"
+                onClick={() => void startCamera('environment')}
+              >
+                Start camera
+              </button>
+            )}
+
+            {state.status === 'requesting' && (
+              <p className="camera-progress" role="status">
+                Opening camera…
+              </p>
+            )}
+
+            {canSwitch && (
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={switchCamera}
+                disabled={isCapturing}
+              >
+                Switch to {state.facingMode === 'user' ? 'rear' : 'front'}{' '}
+                camera
+              </button>
+            )}
+
+            {isReady && (
+              <>
+                <p className="camera-details">
+                  {state.facingMode === 'user' ? 'Front' : 'Rear'} camera ·{' '}
+                  {state.dimensions.width} × {state.dimensions.height}
+                </p>
+                <div
+                  className="overlay-controls"
+                  aria-label="Clawd overlay controls"
+                >
+                  <p className="overlay-selection">
+                    <span>Selected overlay</span>
+                    <strong>{REFERENCE_CLAWD_ASSET.label}</strong>
+                  </p>
+                  <button
+                    className="secondary-action overlay-reset"
+                    type="button"
+                    onClick={resetTransform}
+                    disabled={isCapturing}
+                  >
+                    Reset Clawd
+                  </button>
+                </div>
+
+                {photoCapture.state.status === 'preparing' && (
+                  <p className="capture-setup" role="status">
+                    Preparing the reference Clawd for capture…
+                  </p>
+                )}
+
+                {photoCapture.state.status === 'error' && (
+                  <div className="capture-error" role="alert">
+                    <strong>Capture needs attention</strong>
+                    <p>{photoCapture.state.error.message}</p>
+                    {photoCapture.state.phase === 'asset' && (
+                      <button
+                        className="secondary-action"
+                        type="button"
+                        onClick={photoCapture.retryAsset}
+                      >
+                        Retry Clawd asset
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  className="shutter-action"
+                  type="button"
+                  aria-label="Take photo"
+                  onClick={() => void photoCapture.capture()}
+                  disabled={!canCapture}
+                >
+                  <span aria-hidden="true" />
+                  {isCapturing
+                    ? 'Capturing…'
+                    : photoCapture.state.status === 'error' &&
+                        photoCapture.state.phase === 'capture'
+                      ? 'Try capture again'
+                      : 'Take photo'}
+                </button>
+              </>
+            )}
+
+            {(state.status === 'permission-denied' ||
+              state.status === 'unavailable' ||
+              state.status === 'interrupted' ||
+              state.status === 'runtime-error') && (
+              <button className="primary-action" type="button" onClick={retry}>
+                {state.status === 'interrupted'
+                  ? 'Restart camera'
+                  : 'Try again'}
+              </button>
+            )}
+          </>
         )}
       </div>
     </section>

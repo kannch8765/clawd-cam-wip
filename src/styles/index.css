@@ -34,6 +34,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
 .app-shell {
   width: min(100% - 1.25rem, 58rem);
   margin: 0 auto;
@@ -98,7 +103,8 @@ h1 {
     );
 }
 
-.camera-preview {
+.camera-preview,
+.capture-result-image {
   display: block;
   width: 100%;
   height: 100%;
@@ -109,6 +115,15 @@ h1 {
 
 .camera-preview--mirrored {
   transform: scaleX(-1);
+}
+
+.camera-preview--hidden {
+  display: none;
+}
+
+.capture-result-image {
+  object-fit: contain;
+  object-position: center;
 }
 
 .overlay-interaction-layer {
@@ -155,6 +170,18 @@ h1 {
   font-size: 2.4rem;
 }
 
+.capture-progress-overlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(41 36 31 / 58%);
+  color: #fffdf8;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
 .camera-copy {
   padding: 0.75rem 0.5rem 1rem;
 }
@@ -165,13 +192,15 @@ h1 {
   letter-spacing: -0.035em;
 }
 
-.camera-copy > p:not(.status-pill) {
+.camera-copy > p:not(.status-pill),
+.capture-result-copy > p:not(.status-pill) {
   color: #6c5e4f;
   line-height: 1.65;
 }
 
 .primary-action,
-.secondary-action {
+.secondary-action,
+.shutter-action {
   width: 100%;
   margin-top: 1rem;
   border-radius: 999px;
@@ -191,14 +220,37 @@ h1 {
   color: #43392f;
 }
 
+.shutter-action {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #29241f;
+  background: #fffdf8;
+  color: #29241f;
+  text-align: left;
+}
+
+.shutter-action > span {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0.28rem solid #fffdf8;
+  border-radius: 50%;
+  background: #29241f;
+  box-shadow: 0 0 0 2px #29241f;
+}
+
 .primary-action:focus-visible,
-.secondary-action:focus-visible {
+.secondary-action:focus-visible,
+.shutter-action:focus-visible {
   outline: 3px solid #d7965f;
   outline-offset: 3px;
 }
 
 .camera-progress,
-.camera-details {
+.camera-details,
+.capture-setup {
   margin: 1rem 0 0;
   font-size: 0.9rem;
 }
@@ -229,6 +281,50 @@ h1 {
 
 .overlay-reset {
   margin-top: 0.75rem;
+}
+
+.capture-error {
+  margin-top: 1rem;
+  border: 1px solid #d7a883;
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: #fff6ee;
+}
+
+.capture-error p {
+  margin: 0.35rem 0 0;
+  color: #76533c;
+  line-height: 1.5;
+}
+
+.capture-metadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+}
+
+.capture-metadata div {
+  min-width: 0;
+  border: 1px solid #e1d3bf;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: #fffdf8;
+}
+
+.capture-metadata dt {
+  color: #7b6a57;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.capture-metadata dd {
+  overflow-wrap: anywhere;
+  margin: 0.3rem 0 0;
+  color: #352d25;
+  font-weight: 700;
 }
 
 @media (min-width: 721px) {

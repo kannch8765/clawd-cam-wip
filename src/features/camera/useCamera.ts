@@ -3,6 +3,7 @@ import { mapCameraError } from './cameraAdapter';
 import {
   CameraError,
   type CameraAdapter,
+  type CameraCaptureSource,
   type CameraFacingMode,
   type CameraState,
 } from './cameraTypes';
@@ -33,10 +34,21 @@ function errorState(
   }
 }
 
+function tracksAreActive(stream: MediaStream): boolean {
+  const tracks = stream.getTracks();
+  return (
+    tracks.length > 0 &&
+    tracks.every(
+      (track) => track.readyState === undefined || track.readyState !== 'ended',
+    )
+  );
+}
+
 export function useCamera(adapter: CameraAdapter) {
   const [state, setState] = useState<CameraState>(initialState);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const captureSourceRef = useRef<CameraCaptureSource | null>(null);
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const removeTrackListenersRef = useRef<(() => void) | null>(null);
@@ -58,6 +70,7 @@ export function useCamera(adapter: CameraAdapter) {
   const releaseCurrentStream = useCallback(() => {
     removeTrackListenersRef.current?.();
     removeTrackListenersRef.current = null;
+    captureSourceRef.current = null;
 
     const stream = streamRef.current;
     streamRef.current = null;
@@ -176,6 +189,13 @@ export function useCamera(adapter: CameraAdapter) {
         }
 
         abortControllerRef.current = null;
+        captureSourceRef.current = {
+          requestId,
+          stream,
+          video,
+          facingMode,
+          dimensions: { ...dimensions },
+        };
         setState({
           status: 'ready',
           facingMode,
@@ -236,6 +256,34 @@ export function useCamera(adapter: CameraAdapter) {
     void startCamera(facingMode);
   }, [startCamera, state.facingMode]);
 
+  const getCameraCaptureSource = useCallback((): CameraCaptureSource | null => {
+    const source = captureSourceRef.current;
+    if (!source) {
+      return null;
+    }
+
+    if (
+      requestIdRef.current !== source.requestId ||
+      streamRef.current !== source.stream ||
+      videoRef.current !== source.video ||
+      source.video.srcObject !== source.stream ||
+      source.video.videoWidth <= 0 ||
+      source.video.videoHeight <= 0 ||
+      !tracksAreActive(source.stream)
+    ) {
+      return null;
+    }
+
+    return source;
+  }, []);
+
+  const isCameraCaptureSourceCurrent = useCallback(
+    (source: CameraCaptureSource): boolean => {
+      return getCameraCaptureSource() === source;
+    },
+    [getCameraCaptureSource],
+  );
+
   useEffect(() => {
     mountedRef.current = true;
 
@@ -252,5 +300,7 @@ export function useCamera(adapter: CameraAdapter) {
     startCamera,
     retry,
     switchCamera,
+    getCameraCaptureSource,
+    isCameraCaptureSourceCurrent,
   };
 }
