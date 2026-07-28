@@ -33,15 +33,38 @@ jobs:
           sed -i 's/run: npm install$/run: npm ci/' .github/workflows/deploy-pages.yml
           rm .github/workflows/generate-task-001-lockfile.yml
 
-      - name: Normalize formatting
-        run: npm run format
+      - name: Normalize formatting and capture diagnostics
+        id: format
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run format 2>&1 | tee task-001-format.log
+
+      - name: Commit diagnostic state when formatting fails
+        if: steps.format.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: capture Task 001 formatting failure"
+          git push origin HEAD:task/001-project-foundation
+
+      - name: Stop after diagnostic commit
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Remove empty diagnostic log
+        if: steps.format.outcome == 'success'
+        run: rm task-001-format.log
 
       - name: Verify clean install and quality gates
+        if: steps.format.outcome == 'success'
         run: |
           npm ci
           npm run check
 
       - name: Commit verified fix
+        if: steps.format.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
