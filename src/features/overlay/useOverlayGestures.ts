@@ -43,21 +43,40 @@ export function useOverlayGestures({
   onTransformChange,
 }: OverlayGestureOptions): void {
   const transformRef = useRef(transform);
+  const dragActiveRef = useRef(false);
+  const suppressCurrentDragRef = useRef(false);
 
   useEffect(() => {
     transformRef.current = transform;
   }, [transform]);
 
+  const commitTransform = (nextTransform: OverlayTransform) => {
+    transformRef.current = nextTransform;
+    onTransformChange(nextTransform);
+  };
+
   useGesture(
     {
-      onDrag: ({ movement: [movementX, movementY], memo }) => {
+      onDrag: ({ first, last, movement: [movementX, movementY], memo }) => {
+        if (first) {
+          dragActiveRef.current = true;
+        }
+
         const previewBounds = previewBoundsFromTarget(target.current);
         const gestureMemo = (memo as DragMemo | undefined) ?? {
           start: transformRef.current,
         };
 
+        if (suppressCurrentDragRef.current) {
+          if (last) {
+            suppressCurrentDragRef.current = false;
+            dragActiveRef.current = false;
+          }
+          return gestureMemo;
+        }
+
         if (previewBounds) {
-          onTransformChange(
+          commitTransform(
             applyDragGesture(
               gestureMemo.start,
               { x: movementX, y: movementY },
@@ -66,9 +85,17 @@ export function useOverlayGestures({
           );
         }
 
+        if (last) {
+          dragActiveRef.current = false;
+        }
+
         return gestureMemo;
       },
-      onPinch: ({ offset: [scale, rotation], origin, memo }) => {
+      onPinch: ({ first, offset: [scale, rotation], origin, memo }) => {
+        if (first && dragActiveRef.current) {
+          suppressCurrentDragRef.current = true;
+        }
+
         const previewBounds = previewBoundsFromTarget(target.current);
         const currentOrigin = previewBounds
           ? {
@@ -82,7 +109,7 @@ export function useOverlayGestures({
         };
 
         if (previewBounds) {
-          onTransformChange(
+          commitTransform(
             applyPinchGesture({
               start: gestureMemo.start,
               startOrigin: gestureMemo.startOrigin,
