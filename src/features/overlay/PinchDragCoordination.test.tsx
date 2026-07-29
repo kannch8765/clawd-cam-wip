@@ -115,6 +115,14 @@ describe('pinch and drag coordination', () => {
         clientY: 200,
       });
       fireEvent.pointerMove(layer, {
+        pointerId: 1,
+        pointerType: 'touch',
+        isPrimary: true,
+        buttons: 1,
+        clientX: 90,
+        clientY: 180,
+      });
+      fireEvent.pointerMove(layer, {
         pointerId: 2,
         pointerType: 'touch',
         isPrimary: false,
