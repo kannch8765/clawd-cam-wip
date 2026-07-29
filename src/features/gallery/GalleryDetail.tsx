@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { PhotoActions } from '../sharing/PhotoActions';
+import { shareablePhotoFromStoredRecord } from '../sharing/photoFile';
+import { useSharingAdapter } from '../sharing/SharingServicesContext';
+import { usePhotoSharing } from '../sharing/usePhotoSharing';
 import {
   GalleryStorageError,
   toValidCapturedAtDate,
@@ -47,19 +51,35 @@ function DetailPhoto({ photo }: { photo: StoredPhotoRecord }) {
   );
 }
 
-export function GalleryDetail({
+interface ReadyGalleryDetailProps {
+  id: string;
+  photo: StoredPhotoRecord;
+  repository: GalleryRepository;
+  onBack(): void;
+  onDeleted(id: string): void;
+  invalidate(): void;
+}
+
+function ReadyGalleryDetail({
   id,
+  photo,
   repository,
   onBack,
   onDeleted,
-}: GalleryDetailProps) {
-  const { state, reload, invalidate } = useGalleryDetail(repository, id);
+  invalidate,
+}: ReadyGalleryDetailProps) {
   const [deleteError, setDeleteError] = useState<GalleryStorageError | null>(
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const deletingRef = useRef(false);
   const mountedRef = useRef(false);
+  const sharingAdapter = useSharingAdapter();
+  const shareablePhoto = useMemo(
+    () => shareablePhotoFromStoredRecord(photo),
+    [photo],
+  );
+  const photoActions = usePhotoSharing(shareablePhoto, sharingAdapter);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -69,7 +89,7 @@ export function GalleryDetail({
   }, []);
 
   const deletePhoto = async () => {
-    if (deletingRef.current) {
+    if (deletingRef.current || photoActions.isBusy) {
       return;
     }
     if (!window.confirm('Delete this Clawd photo from this device?')) {
@@ -102,6 +122,65 @@ export function GalleryDetail({
       }
     }
   };
+
+  const capturedAt = formatCapturedAt(photo.capturedAt);
+  return (
+    <section className="gallery-card" aria-labelledby="gallery-detail-heading">
+      <button className="secondary-action" type="button" onClick={onBack}>
+        Back to gallery
+      </button>
+      <h2 id="gallery-detail-heading">Saved Clawd photo</h2>
+      <DetailPhoto photo={photo} />
+      <dl className="capture-metadata gallery-detail-metadata">
+        <div>
+          <dt>Captured</dt>
+          <dd>
+            <time dateTime={capturedAt.dateTime}>{capturedAt.label}</time>
+          </dd>
+        </div>
+        <div>
+          <dt>Size</dt>
+          <dd>
+            {photo.width} × {photo.height}
+          </dd>
+        </div>
+        <div>
+          <dt>Camera</dt>
+          <dd>{photo.facingMode === 'user' ? 'Front' : 'Rear'}</dd>
+        </div>
+        <div>
+          <dt>Clawd</dt>
+          <dd>{photo.overlayAssetId}</dd>
+        </div>
+      </dl>
+
+      <PhotoActions controller={photoActions} />
+
+      {deleteError && (
+        <div className="gallery-error" role="alert">
+          <strong>Photo was not deleted</strong>
+          <p>{deleteError.message}</p>
+        </div>
+      )}
+      <button
+        className="danger-action"
+        type="button"
+        onClick={() => void deletePhoto()}
+        disabled={isDeleting || photoActions.isBusy}
+      >
+        {isDeleting ? 'Deleting…' : 'Delete photo'}
+      </button>
+    </section>
+  );
+}
+
+export function GalleryDetail({
+  id,
+  repository,
+  onBack,
+  onDeleted,
+}: GalleryDetailProps) {
+  const { state, reload, invalidate } = useGalleryDetail(repository, id);
 
   if (state.status === 'loading') {
     return (
@@ -159,51 +238,14 @@ export function GalleryDetail({
     );
   }
 
-  const { photo } = state;
-  const capturedAt = formatCapturedAt(photo.capturedAt);
   return (
-    <section className="gallery-card" aria-labelledby="gallery-detail-heading">
-      <button className="secondary-action" type="button" onClick={onBack}>
-        Back to gallery
-      </button>
-      <h2 id="gallery-detail-heading">Saved Clawd photo</h2>
-      <DetailPhoto photo={photo} />
-      <dl className="capture-metadata gallery-detail-metadata">
-        <div>
-          <dt>Captured</dt>
-          <dd>
-            <time dateTime={capturedAt.dateTime}>{capturedAt.label}</time>
-          </dd>
-        </div>
-        <div>
-          <dt>Size</dt>
-          <dd>
-            {photo.width} × {photo.height}
-          </dd>
-        </div>
-        <div>
-          <dt>Camera</dt>
-          <dd>{photo.facingMode === 'user' ? 'Front' : 'Rear'}</dd>
-        </div>
-        <div>
-          <dt>Clawd</dt>
-          <dd>{photo.overlayAssetId}</dd>
-        </div>
-      </dl>
-      {deleteError && (
-        <div className="gallery-error" role="alert">
-          <strong>Photo was not deleted</strong>
-          <p>{deleteError.message}</p>
-        </div>
-      )}
-      <button
-        className="danger-action"
-        type="button"
-        onClick={() => void deletePhoto()}
-        disabled={isDeleting}
-      >
-        {isDeleting ? 'Deleting…' : 'Delete photo'}
-      </button>
-    </section>
+    <ReadyGalleryDetail
+      id={id}
+      photo={state.photo}
+      repository={repository}
+      onBack={onBack}
+      onDeleted={onDeleted}
+      invalidate={invalidate}
+    />
   );
 }
