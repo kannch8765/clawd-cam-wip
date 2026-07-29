@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { GalleryDetail } from './GalleryDetail';
 import {
   toValidCapturedAtDate,
@@ -10,6 +10,8 @@ import { useBlobObjectUrl, useGallery } from './useGallery';
 interface GalleryViewProps {
   repository: GalleryRepository;
   onBackToCamera(): void;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
+  focusHeadingOnReady?: boolean;
 }
 
 interface CapturedAtPresentation {
@@ -37,14 +39,21 @@ function formatCapturedAt(capturedAt: number): CapturedAtPresentation {
 function GalleryThumbnail({
   photo,
   onOpen,
+  registerButton,
 }: {
   photo: StoredPhotoSummary;
   onOpen(): void;
+  registerButton(button: HTMLButtonElement | null): void;
 }) {
   const objectUrl = useBlobObjectUrl(photo.thumbnailBlob);
   const capturedAt = formatCapturedAt(photo.capturedAt);
   return (
-    <button className="gallery-tile" type="button" onClick={onOpen}>
+    <button
+      ref={registerButton}
+      className="gallery-tile"
+      type="button"
+      onClick={onOpen}
+    >
       {objectUrl ? (
         <img src={objectUrl} alt="Saved Clawd photo thumbnail" />
       ) : (
@@ -57,9 +66,55 @@ function GalleryThumbnail({
   );
 }
 
-export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
+export function GalleryView({
+  repository,
+  onBackToCamera,
+  headingRef,
+  focusHeadingOnReady = false,
+}: GalleryViewProps) {
   const { state, reload } = useGallery(repository);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const internalHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const activeHeadingRef = headingRef ?? internalHeadingRef;
+  const focusOnReadyRef = useRef(focusHeadingOnReady);
+  const returnFocusIdRef = useRef<string | null>(null);
+  const tileButtonsRef = useRef(new Map<string, HTMLButtonElement>());
+  const focusHeadingAfterDeleteRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (selectedId !== null) {
+      return;
+    }
+
+    if (focusHeadingAfterDeleteRef.current) {
+      if (state.status === 'loading') {
+        return;
+      }
+      focusHeadingAfterDeleteRef.current = false;
+      activeHeadingRef.current?.focus();
+      return;
+    }
+
+    if (focusOnReadyRef.current) {
+      if (state.status === 'loading') {
+        return;
+      }
+      focusOnReadyRef.current = false;
+      activeHeadingRef.current?.focus();
+      return;
+    }
+
+    const returnFocusId = returnFocusIdRef.current;
+    if (!returnFocusId) {
+      return;
+    }
+
+    const returnTarget = tileButtonsRef.current.get(returnFocusId);
+    if (returnTarget) {
+      returnTarget.focus();
+      returnFocusIdRef.current = null;
+    }
+  }, [activeHeadingRef, selectedId, state.status]);
 
   if (selectedId) {
     return (
@@ -68,6 +123,8 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
         repository={repository}
         onBack={() => setSelectedId(null)}
         onDeleted={(deletedId) => {
+          focusHeadingAfterDeleteRef.current = true;
+          returnFocusIdRef.current = null;
           setSelectedId((currentId) =>
             currentId === deletedId ? null : currentId,
           );
@@ -79,8 +136,14 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
 
   if (state.status === 'loading') {
     return (
-      <section className="gallery-card" aria-labelledby="gallery-heading">
-        <h2 id="gallery-heading">Local gallery</h2>
+      <section
+        className="gallery-card"
+        aria-labelledby="gallery-heading"
+        aria-busy="true"
+      >
+        <h2 id="gallery-heading" ref={activeHeadingRef} tabIndex={-1}>
+          Local gallery
+        </h2>
         <p role="status">Loading saved Clawd photos…</p>
         <button
           className="secondary-action"
@@ -96,7 +159,9 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
   if (state.status === 'error') {
     return (
       <section className="gallery-card" aria-labelledby="gallery-heading">
-        <h2 id="gallery-heading">Local gallery unavailable</h2>
+        <h2 id="gallery-heading" ref={activeHeadingRef} tabIndex={-1}>
+          Local gallery unavailable
+        </h2>
         <div className="gallery-error" role="alert">
           <p>{state.error.message}</p>
         </div>
@@ -125,7 +190,9 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
       <div className="gallery-heading-row">
         <div>
           <p className="status-pill">Stored on this device</p>
-          <h2 id="gallery-heading">Local gallery</h2>
+          <h2 id="gallery-heading" ref={activeHeadingRef} tabIndex={-1}>
+            Local gallery
+          </h2>
         </div>
         <button
           className="secondary-action"
@@ -153,7 +220,17 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
             <GalleryThumbnail
               key={photo.id}
               photo={photo}
-              onOpen={() => setSelectedId(photo.id)}
+              registerButton={(button) => {
+                if (button) {
+                  tileButtonsRef.current.set(photo.id, button);
+                } else {
+                  tileButtonsRef.current.delete(photo.id);
+                }
+              }}
+              onOpen={() => {
+                returnFocusIdRef.current = photo.id;
+                setSelectedId(photo.id);
+              }}
             />
           ))}
         </div>

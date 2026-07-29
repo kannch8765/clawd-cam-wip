@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { PhotoActions } from '../sharing/PhotoActions';
 import { shareablePhotoFromStoredRecord } from '../sharing/photoFile';
 import { useSharingAdapter } from '../sharing/sharingServices';
@@ -58,6 +58,7 @@ interface ReadyGalleryDetailProps {
   onBack(): void;
   onDeleted(id: string): void;
   invalidate(): void;
+  headingRef: RefObject<HTMLHeadingElement | null>;
 }
 
 function ReadyGalleryDetail({
@@ -67,6 +68,7 @@ function ReadyGalleryDetail({
   onBack,
   onDeleted,
   invalidate,
+  headingRef,
 }: ReadyGalleryDetailProps) {
   const [deleteError, setDeleteError] = useState<GalleryStorageError | null>(
     null,
@@ -129,7 +131,9 @@ function ReadyGalleryDetail({
       <button className="secondary-action" type="button" onClick={onBack}>
         Back to gallery
       </button>
-      <h2 id="gallery-detail-heading">Saved Clawd photo</h2>
+      <h2 id="gallery-detail-heading" ref={headingRef} tabIndex={-1}>
+        Saved Clawd photo
+      </h2>
       <DetailPhoto photo={photo} />
       <dl className="capture-metadata gallery-detail-metadata">
         <div>
@@ -162,9 +166,14 @@ function ReadyGalleryDetail({
           <p>{deleteError.message}</p>
         </div>
       )}
+      <p id="delete-photo-description" className="visually-hidden">
+        Deleting removes this photo from this browser's local gallery after a
+        confirmation prompt.
+      </p>
       <button
         className="danger-action"
         type="button"
+        aria-describedby="delete-photo-description"
         onClick={() => void deletePhoto()}
         disabled={isDeleting || photoActions.isBusy}
       >
@@ -181,17 +190,25 @@ export function GalleryDetail({
   onDeleted,
 }: GalleryDetailProps) {
   const { state, reload, invalidate } = useGalleryDetail(repository, id);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, [id, state.status]);
 
   if (state.status === 'loading') {
     return (
       <section
         className="gallery-card"
         aria-labelledby="gallery-detail-heading"
+        aria-busy="true"
       >
         <button className="secondary-action" type="button" onClick={onBack}>
           Back to gallery
         </button>
-        <h2 id="gallery-detail-heading">Saved photo</h2>
+        <h2 id="gallery-detail-heading" ref={headingRef} tabIndex={-1}>
+          Saved photo
+        </h2>
         <p role="status">Loading full-size photo…</p>
       </section>
     );
@@ -203,7 +220,9 @@ export function GalleryDetail({
         className="gallery-card"
         aria-labelledby="gallery-detail-heading"
       >
-        <h2 id="gallery-detail-heading">Photo not found</h2>
+        <h2 id="gallery-detail-heading" ref={headingRef} tabIndex={-1}>
+          Photo not found
+        </h2>
         <p>This photo is no longer stored on this device.</p>
         <button className="primary-action" type="button" onClick={onBack}>
           Back to gallery
@@ -218,7 +237,9 @@ export function GalleryDetail({
         className="gallery-card"
         aria-labelledby="gallery-detail-heading"
       >
-        <h2 id="gallery-detail-heading">Saved photo unavailable</h2>
+        <h2 id="gallery-detail-heading" ref={headingRef} tabIndex={-1}>
+          Saved photo unavailable
+        </h2>
         <div className="gallery-error" role="alert">
           <p>{state.error.message}</p>
         </div>
@@ -246,6 +267,7 @@ export function GalleryDetail({
       onBack={onBack}
       onDeleted={onDeleted}
       invalidate={invalidate}
+      headingRef={headingRef}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type RefObject } from 'react';
 import { useGalleryServices } from '../gallery/galleryServices';
 import { useSavePhoto } from '../gallery/useGallery';
 import { PhotoActions } from '../sharing/PhotoActions';
@@ -10,9 +10,14 @@ import type { PhotoCaptureResult } from './compositionTypes';
 interface CaptureResultProps {
   result: PhotoCaptureResult;
   onRetake(): void;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
 }
 
-export function CaptureResult({ result, onRetake }: CaptureResultProps) {
+export function CaptureResult({
+  result,
+  onRetake,
+  headingRef,
+}: CaptureResultProps) {
   const { repository, createThumbnail, idFactory } = useGalleryServices();
   const sharingAdapter = useSharingAdapter();
   const shareablePhoto = useMemo(
@@ -30,9 +35,14 @@ export function CaptureResult({ result, onRetake }: CaptureResultProps) {
   const isSaved = savePhoto.state.status === 'saved';
 
   return (
-    <div className="capture-result-copy">
+    <div
+      className="capture-result-copy"
+      aria-busy={isSaving || photoActions.isBusy}
+    >
       <p className="status-pill">Photo captured</p>
-      <h2 id="camera-heading">Clawd composition</h2>
+      <h2 id="camera-heading" ref={headingRef} tabIndex={-1}>
+        Clawd composition
+      </h2>
       <p>
         This preview is the generated photo Blob, composed from the frozen
         camera frame geometry and Clawd transform.

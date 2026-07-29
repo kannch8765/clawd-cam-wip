@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ClawdCam placeholder icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ClawdCam MVP icon">
   <rect width="64" height="64" rx="16" fill="#fff8ed" />
-  <rect x="12" y="20" width="40" height="30" rx="9" fill="#2f2923" />
-  <circle cx="32" cy="35" r="9" fill="#fff8ed" />
-  <path d="M22 20l4-7h12l4 7" fill="#2f2923" />
+  <path d="M20 20l4-7h16l4 7h4a8 8 0 0 1 8 8v18a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8h4Z" fill="#2f2923" />
+  <circle cx="32" cy="37" r="11" fill="#d7965f" />
+  <circle cx="32" cy="37" r="6.5" fill="#fffdf8" />
+  <circle cx="46" cy="29" r="2.5" fill="#fffdf8" />
 </svg>

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { PhotoSharingController } from './usePhotoSharing';
 
 interface PhotoActionsProps {
@@ -35,6 +36,7 @@ function capabilityMessage(controller: PhotoSharingController): string | null {
 }
 
 export function PhotoActions({ controller }: PhotoActionsProps) {
+  const hintId = useId();
   const message = statusMessage(controller);
   const capability = capabilityMessage(controller);
   const isSharing = controller.state.status === 'sharing';
@@ -60,6 +62,7 @@ export function PhotoActions({ controller }: PhotoActionsProps) {
         <button
           className="primary-action"
           type="button"
+          aria-describedby={capability ? hintId : undefined}
           onClick={controller.download}
           disabled={controller.isBusy || !controller.canDownload}
         >
@@ -67,12 +70,22 @@ export function PhotoActions({ controller }: PhotoActionsProps) {
         </button>
       </div>
 
-      {capability && <p className="photo-action-hint">{capability}</p>}
-      {message && (
-        <p className="photo-action-status" role="status" aria-live="polite">
-          {message}
+      {capability && (
+        <p id={hintId} className="photo-action-hint">
+          {capability}
         </p>
       )}
+      <div
+        className="photo-action-feedback"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {message && (
+          <p className="photo-action-status" role="status">
+            {message}
+          </p>
+        )}
+      </div>
       {controller.state.status === 'error' && (
         <div className="photo-action-error" role="alert">
           <strong>Photo action needs attention</strong>

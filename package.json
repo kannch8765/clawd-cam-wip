@@ -15,7 +15,9 @@
     "format:check": "prettier --check . --ignore-unknown",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run format:check && npm run test && npm run build"
+    "generate:icons": "node scripts/generate-mvp-icons.mjs",
+    "validate:pwa": "node scripts/validate-pwa-artifacts.mjs",
+    "check": "npm run lint && npm run format:check && npm run test && npm run validate:pwa"
   },
   "dependencies": {
     "@use-gesture/react": "^10.3.1",

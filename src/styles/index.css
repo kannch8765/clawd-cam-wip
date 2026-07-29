@@ -17,10 +17,17 @@
   box-sizing: border-box;
 }
 
+html {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 body {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -31,6 +38,7 @@ select {
 }
 
 button {
+  min-height: 2.75rem;
   cursor: pointer;
 }
 
@@ -39,10 +47,32 @@ button:disabled {
   opacity: 0.56;
 }
 
+button:focus-visible,
+[role='button']:focus-visible {
+  outline: 3px solid #b9682f;
+  outline-offset: 3px;
+}
+
+h2[tabindex='-1']:focus {
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .app-shell {
-  width: min(100% - 1.25rem, 58rem);
+  width: min(100%, 58rem);
   margin: 0 auto;
-  padding: 2rem 0;
+  padding: max(1.25rem, env(safe-area-inset-top))
+    max(0.625rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom))
+    max(0.625rem, env(safe-area-inset-left));
 }
 
 .hero {
@@ -52,6 +82,7 @@ button:disabled {
 .eyebrow,
 .status-pill {
   width: fit-content;
+  max-width: 100%;
   margin: 0;
   border: 1px solid #d9c8ad;
   border-radius: 999px;
@@ -61,6 +92,7 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
@@ -69,6 +101,7 @@ h1 {
   font-size: clamp(3rem, 10vw, 6.5rem);
   line-height: 0.95;
   letter-spacing: -0.06em;
+  overflow-wrap: anywhere;
 }
 
 .tagline {
@@ -79,6 +112,7 @@ h1 {
 
 .camera-card {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   border: 1px solid #decfb9;
   border-radius: 2rem;
@@ -89,6 +123,7 @@ h1 {
 
 .camera-stage {
   position: relative;
+  min-width: 0;
   min-height: 24rem;
   overflow: hidden;
   border-radius: 1.35rem;
@@ -176,14 +211,18 @@ h1 {
   inset: 0;
   display: grid;
   place-items: center;
+  padding: 1rem;
   background: rgb(41 36 31 / 58%);
   color: #fffdf8;
   font-weight: 750;
   letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .camera-copy {
+  min-width: 0;
   padding: 0.75rem 0.5rem 1rem;
+  overflow-wrap: anywhere;
 }
 
 .camera-copy h2 {
@@ -202,10 +241,12 @@ h1 {
 .secondary-action,
 .shutter-action {
   width: 100%;
+  min-height: 2.75rem;
   margin-top: 1rem;
   border-radius: 999px;
   padding: 0.85rem 1.1rem;
   font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 .primary-action {
@@ -215,14 +256,14 @@ h1 {
 }
 
 .secondary-action {
-  border: 1px solid #bba98f;
+  border: 1px solid #a68e70;
   background: #fffdf8;
   color: #43392f;
 }
 
 .shutter-action {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   border: 1px solid #29241f;
@@ -239,13 +280,6 @@ h1 {
   border-radius: 50%;
   background: #29241f;
   box-shadow: 0 0 0 2px #29241f;
-}
-
-.primary-action:focus-visible,
-.secondary-action:focus-visible,
-.shutter-action:focus-visible {
-  outline: 3px solid #d7965f;
-  outline-offset: 3px;
 }
 
 .camera-progress,
@@ -268,7 +302,7 @@ h1 {
 }
 
 .overlay-selection span {
-  color: #7b6a57;
+  color: #6d5d4a;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -279,13 +313,20 @@ h1 {
   color: #352d25;
 }
 
+.reference-asset-notice {
+  margin: 0.5rem 0 0;
+  color: #5f4e3d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .overlay-reset {
   margin-top: 0.75rem;
 }
 
 .capture-error {
   margin-top: 1rem;
-  border: 1px solid #d7a883;
+  border: 1px solid #c98c5d;
   border-radius: 1rem;
   padding: 0.9rem;
   background: #fff6ee;
@@ -293,7 +334,7 @@ h1 {
 
 .capture-error p {
   margin: 0.35rem 0 0;
-  color: #76533c;
+  color: #674530;
   line-height: 1.5;
 }
 
@@ -313,7 +354,7 @@ h1 {
 }
 
 .capture-metadata dt {
-  color: #7b6a57;
+  color: #6d5d4a;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -327,9 +368,24 @@ h1 {
   font-weight: 700;
 }
 
+@media (max-width: 420px) {
+  .capture-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-stage,
+  .camera-preview,
+  .capture-result-image {
+    min-height: 20rem;
+  }
+}
+
 @media (min-width: 721px) {
   .app-shell {
-    padding: 4rem 0;
+    padding: max(4rem, env(safe-area-inset-top))
+      max(1rem, env(safe-area-inset-right))
+      max(4rem, env(safe-area-inset-bottom))
+      max(1rem, env(safe-area-inset-left));
   }
 
   .hero {
@@ -345,5 +401,33 @@ h1 {
   .camera-copy {
     align-self: end;
     padding: 1rem 1rem 1.25rem 0;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .app-shell {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .hero {
+    margin-bottom: 0.75rem;
+  }
+
+  .camera-stage,
+  .camera-preview,
+  .capture-result-image {
+    min-height: 14rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

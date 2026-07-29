@@ -1,0 +1,5 @@
+h2[tabindex='-1']:focus-visible {
+  border-radius: 0.25rem;
+  outline: 3px solid #b9682f;
+  outline-offset: 0.25rem;
+}
