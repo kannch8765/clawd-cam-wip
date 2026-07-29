@@ -11,8 +11,6 @@ const MIME_EXTENSIONS: Readonly<Record<string, string>> = {
   'image/webp': 'webp',
 };
 
-const MIME_CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
-
 export interface PhotoFileFactory {
   supportsFile(): boolean;
   createFile(
@@ -34,13 +32,23 @@ function normalizeMimeType(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function hasUnsafeMimeCharacter(value: string): boolean {
+  for (const character of value) {
+    const code = character.charCodeAt(0);
+    if (code <= 0x1f || code === 0x7f || code === 0x2028 || code === 0x2029) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function resolvePhotoMimeType(photo: ShareablePhoto): string {
   const blobMimeType = normalizeMimeType(photo.blob.type);
   const metadataMimeType = normalizeMimeType(photo.mimeType);
 
   if (
-    MIME_CONTROL_CHARACTERS.test(blobMimeType) ||
-    MIME_CONTROL_CHARACTERS.test(metadataMimeType)
+    hasUnsafeMimeCharacter(blobMimeType) ||
+    hasUnsafeMimeCharacter(metadataMimeType)
   ) {
     throw new PhotoActionError(
       'invalid-photo',
