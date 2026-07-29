@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { GalleryDetail } from './GalleryDetail';
-import type { GalleryRepository, StoredPhotoSummary } from './galleryTypes';
+import {
+  toValidCapturedAtDate,
+  type GalleryRepository,
+  type StoredPhotoSummary,
+} from './galleryTypes';
 import { useBlobObjectUrl, useGallery } from './useGallery';
 
 interface GalleryViewProps {
@@ -8,13 +12,26 @@ interface GalleryViewProps {
   onBackToCamera(): void;
 }
 
-function formatCapturedAt(capturedAt: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(capturedAt));
+interface CapturedAtPresentation {
+  dateTime?: string;
+  label: string;
+}
+
+function formatCapturedAt(capturedAt: number): CapturedAtPresentation {
+  const date = toValidCapturedAtDate(capturedAt);
+  if (!date) {
+    return { label: 'Unknown capture time' };
+  }
+
+  return {
+    dateTime: date.toISOString(),
+    label: new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date),
+  };
 }
 
 function GalleryThumbnail({
@@ -25,6 +42,7 @@ function GalleryThumbnail({
   onOpen(): void;
 }) {
   const objectUrl = useBlobObjectUrl(photo.thumbnailBlob);
+  const capturedAt = formatCapturedAt(photo.capturedAt);
   return (
     <button className="gallery-tile" type="button" onClick={onOpen}>
       {objectUrl ? (
@@ -33,9 +51,7 @@ function GalleryThumbnail({
         <span className="gallery-thumbnail-loading">Preparing thumbnail…</span>
       )}
       <span className="gallery-tile-caption">
-        <time dateTime={new Date(photo.capturedAt).toISOString()}>
-          {formatCapturedAt(photo.capturedAt)}
-        </time>
+        <time dateTime={capturedAt.dateTime}>{capturedAt.label}</time>
       </span>
     </button>
   );
@@ -51,8 +67,10 @@ export function GalleryView({ repository, onBackToCamera }: GalleryViewProps) {
         id={selectedId}
         repository={repository}
         onBack={() => setSelectedId(null)}
-        onDeleted={() => {
-          setSelectedId(null);
+        onDeleted={(deletedId) => {
+          setSelectedId((currentId) =>
+            currentId === deletedId ? null : currentId,
+          );
           void reload();
         }}
       />

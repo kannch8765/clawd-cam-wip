@@ -1,20 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GalleryRepository, StoredPhotoRecord } from './galleryTypes';
-import { GalleryStorageError } from './galleryTypes';
+import {
+  GalleryStorageError,
+  toValidCapturedAtDate,
+  type GalleryRepository,
+  type StoredPhotoRecord,
+} from './galleryTypes';
 import { useBlobObjectUrl, useGalleryDetail } from './useGallery';
 
 interface GalleryDetailProps {
   id: string;
   repository: GalleryRepository;
   onBack(): void;
-  onDeleted(): void;
+  onDeleted(id: string): void;
 }
 
-function formatCapturedAt(capturedAt: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(capturedAt));
+interface CapturedAtPresentation {
+  dateTime?: string;
+  label: string;
+}
+
+function formatCapturedAt(capturedAt: number): CapturedAtPresentation {
+  const date = toValidCapturedAtDate(capturedAt);
+  if (!date) {
+    return { label: 'Unknown capture time' };
+  }
+
+  return {
+    dateTime: date.toISOString(),
+    label: new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date),
+  };
 }
 
 function DetailPhoto({ photo }: { photo: StoredPhotoRecord }) {
@@ -65,7 +82,7 @@ export function GalleryDetail({
     try {
       await repository.deletePhoto(id);
       invalidate();
-      onDeleted();
+      onDeleted(id);
     } catch (error) {
       const normalized =
         error instanceof GalleryStorageError
@@ -143,6 +160,7 @@ export function GalleryDetail({
   }
 
   const { photo } = state;
+  const capturedAt = formatCapturedAt(photo.capturedAt);
   return (
     <section className="gallery-card" aria-labelledby="gallery-detail-heading">
       <button className="secondary-action" type="button" onClick={onBack}>
@@ -154,9 +172,7 @@ export function GalleryDetail({
         <div>
           <dt>Captured</dt>
           <dd>
-            <time dateTime={new Date(photo.capturedAt).toISOString()}>
-              {formatCapturedAt(photo.capturedAt)}
-            </time>
+            <time dateTime={capturedAt.dateTime}>{capturedAt.label}</time>
           </dd>
         </div>
         <div>

@@ -148,6 +148,19 @@ describe('GalleryView list states', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders a defensive label for an injected invalid summary timestamp', async () => {
+    const summary = toStoredPhotoSummary(makeRecord('invalid-summary', 100));
+    summary.capturedAt = Number.MAX_VALUE;
+    const repository = createRepository({
+      listPhotos: vi.fn(async () => [summary]),
+    });
+
+    render(<GalleryView repository={repository} onBackToCamera={vi.fn()} />);
+    const label = await screen.findByText('Unknown capture time');
+
+    expect(label.closest('time')).not.toHaveAttribute('datetime');
+  });
+
   it('renders repository order and creates URLs only for thumbnail Blobs', async () => {
     const newer = makeRecord('newer', 300);
     const older = makeRecord('older', 100);
@@ -189,6 +202,21 @@ describe('GalleryView detail and deletion', () => {
     expect(screen.getByText('1200 × 900')).toBeInTheDocument();
   });
 
+  it('renders a defensive label for an injected invalid detail timestamp', async () => {
+    const photo = makeRecord('invalid-detail', Number.MAX_VALUE);
+    const repository = createRepository({
+      listPhotos: vi.fn(async () => [toStoredPhotoSummary(photo)]),
+      getPhoto: vi.fn(async () => photo),
+    });
+
+    render(<GalleryView repository={repository} onBackToCamera={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Saved Clawd/ }));
+
+    const label = await screen.findByText('Unknown capture time');
+    expect(label.closest('time')).not.toHaveAttribute('datetime');
+    expect(screen.getByAltText('Saved Clawd composition')).toBeInTheDocument();
+  });
+
   it('requires confirmation, coalesces repeated delete clicks, and refreshes list', async () => {
     const photo = makeRecord('delete-me', 300);
     const deletion = deferred<void>();
@@ -218,6 +246,51 @@ describe('GalleryView detail and deletion', () => {
     });
     expect(await screen.findByText('No Clawd photos yet')).toBeInTheDocument();
     expect(repository.listPhotos).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let a late deletion close a different selected photo', async () => {
+    const deletingPhoto = makeRecord('delete-a', 300);
+    const nextPhoto = makeRecord('front', 200);
+    const deletion = deferred<void>();
+    const repository = createRepository({
+      listPhotos: vi
+        .fn<GalleryRepository['listPhotos']>()
+        .mockResolvedValueOnce([
+          toStoredPhotoSummary(deletingPhoto),
+          toStoredPhotoSummary(nextPhoto),
+        ])
+        .mockResolvedValueOnce([toStoredPhotoSummary(nextPhoto)]),
+      getPhoto: vi.fn(async (id) =>
+        id === deletingPhoto.id ? deletingPhoto : nextPhoto,
+      ),
+      deletePhoto: vi.fn(() => deletion.promise),
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<GalleryView repository={repository} onBackToCamera={vi.fn()} />);
+    const initialTiles = await screen.findAllByRole('button', {
+      name: /Saved Clawd/,
+    });
+    fireEvent.click(initialTiles[0]);
+    await screen.findByAltText('Saved Clawd composition');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete photo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to gallery' }));
+
+    const currentTiles = await screen.findAllByRole('button', {
+      name: /Saved Clawd/,
+    });
+    fireEvent.click(currentTiles[1]);
+    expect(
+      await screen.findByText('Front', { selector: 'dd' }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      deletion.resolve();
+      await deletion.promise;
+    });
+    await waitFor(() => expect(repository.listPhotos).toHaveBeenCalledTimes(2));
+    expect(screen.getByText('Front', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByAltText('Saved Clawd composition')).toBeInTheDocument();
   });
 
   it('keeps detail visible and allows retry after delete failure', async () => {

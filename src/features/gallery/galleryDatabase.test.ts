@@ -8,9 +8,11 @@ import {
   GALLERY_DATABASE_VERSION,
   GALLERY_PHOTO_STORE,
   GALLERY_PHOTO_SUMMARY_STORE,
+  createGalleryDatabaseProvider,
   openGalleryDatabase,
   upgradeGalleryDatabase,
   type GalleryDatabase,
+  type GalleryDatabaseOpenAdapter,
   type GalleryDatabaseSchema,
 } from './galleryDatabase';
 import {
@@ -27,6 +29,24 @@ import {
 
 const openedDatabases: GalleryDatabase[] = [];
 const databaseNames = new Set<string>();
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function createFakeDatabase() {
+  const close = vi.fn();
+  return {
+    database: { close } as unknown as GalleryDatabase,
+    close,
+  };
+}
 
 function makeRecord(
   id: string,
@@ -146,6 +166,98 @@ describe('gallery database schema', () => {
   });
 });
 
+describe('gallery database connection lifecycle', () => {
+  it('fails a blocked open and closes a connection that resolves later', async () => {
+    const pending = deferred<GalleryDatabase>();
+    let callbacks!: Parameters<GalleryDatabaseOpenAdapter>[0];
+    const operation = openGalleryDatabase({
+      openDatabase: vi.fn((nextCallbacks) => {
+        callbacks = nextCallbacks;
+        return pending.promise;
+      }),
+      deadlineMs: 1_000,
+    });
+    const rejection = expect(operation).rejects.toMatchObject({
+      code: 'unavailable',
+      message: expect.stringContaining('blocking local gallery access'),
+    });
+
+    callbacks.blocked?.(
+      1,
+      GALLERY_DATABASE_VERSION,
+      {} as IDBVersionChangeEvent,
+    );
+    await rejection;
+
+    const late = createFakeDatabase();
+    pending.resolve(late.database);
+    await pending.promise;
+    await Promise.resolve();
+    expect(late.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('bounds an open request that never settles', async () => {
+    vi.useFakeTimers();
+    const operation = openGalleryDatabase({
+      openDatabase: vi.fn(() => new Promise<GalleryDatabase>(() => undefined)),
+      deadlineMs: 50,
+    });
+    const rejection = expect(operation).rejects.toMatchObject({
+      code: 'unavailable',
+      message: expect.stringContaining('took too long'),
+    });
+
+    try {
+      await vi.advanceTimersByTimeAsync(50);
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('closes a blocking connection and reopens on the next provider call', async () => {
+    const first = createFakeDatabase();
+    const second = createFakeDatabase();
+    const callbacks: Parameters<GalleryDatabaseOpenAdapter>[0][] = [];
+    const databases = [first.database, second.database];
+    const openDatabase = vi.fn<GalleryDatabaseOpenAdapter>((nextCallbacks) => {
+      callbacks.push(nextCallbacks);
+      return Promise.resolve(databases[callbacks.length - 1]);
+    });
+    const provider = createGalleryDatabaseProvider({
+      openDatabase,
+      deadlineMs: 1_000,
+    });
+
+    expect(await provider()).toBe(first.database);
+    callbacks[0].blocking?.(1, 2, {} as IDBVersionChangeEvent);
+    expect(first.close).toHaveBeenCalledTimes(1);
+    expect(await provider()).toBe(second.database);
+    expect(openDatabase).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops a terminated cached handle and reopens on retry', async () => {
+    const first = createFakeDatabase();
+    const second = createFakeDatabase();
+    const callbacks: Parameters<GalleryDatabaseOpenAdapter>[0][] = [];
+    const databases = [first.database, second.database];
+    const openDatabase = vi.fn<GalleryDatabaseOpenAdapter>((nextCallbacks) => {
+      callbacks.push(nextCallbacks);
+      return Promise.resolve(databases[callbacks.length - 1]);
+    });
+    const provider = createGalleryDatabaseProvider({
+      openDatabase,
+      deadlineMs: 1_000,
+    });
+
+    expect(await provider()).toBe(first.database);
+    callbacks[0].terminated?.();
+    expect(first.close).toHaveBeenCalledTimes(1);
+    expect(await provider()).toBe(second.database);
+    expect(openDatabase).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('gallery repository', () => {
   it('saves full and thumbnail Blobs with copied metadata', async () => {
     const database = await createTestDatabase();
@@ -215,23 +327,41 @@ describe('gallery repository', () => {
       ...toStoredPhotoSummary(makeRecord('corrupt', 200)),
       thumbnailBlob: 'not-a-blob',
     } as never);
+    await database.put(GALLERY_PHOTO_SUMMARY_STORE, {
+      ...toStoredPhotoSummary(makeRecord('too-new', 200)),
+      capturedAt: Number.MAX_VALUE,
+    } as never);
+    await database.put(GALLERY_PHOTO_SUMMARY_STORE, {
+      ...toStoredPhotoSummary(makeRecord('too-old', 200)),
+      capturedAt: -Number.MAX_VALUE,
+    } as never);
 
     expect((await repository.listPhotos()).map((photo) => photo.id)).toEqual([
       'valid',
     ]);
   });
 
-  it('classifies a corrupt full record without hiding the error', async () => {
+  it('classifies corrupt full records without hiding the error', async () => {
     const database = await createTestDatabase();
     const repository = createGalleryRepository(async () => database);
     await database.put(GALLERY_PHOTO_STORE, {
       ...makeRecord('corrupt', 100),
       overlayTransform: null,
     } as never);
+    await database.put(
+      GALLERY_PHOTO_STORE,
+      makeRecord('too-new', Number.MAX_VALUE) as never,
+    );
+    await database.put(
+      GALLERY_PHOTO_STORE,
+      makeRecord('too-old', -Number.MAX_VALUE) as never,
+    );
 
-    await expect(repository.getPhoto('corrupt')).rejects.toMatchObject({
-      code: 'corrupt-record',
-    });
+    for (const id of ['corrupt', 'too-new', 'too-old']) {
+      await expect(repository.getPhoto(id)).rejects.toMatchObject({
+        code: 'corrupt-record',
+      });
+    }
   });
 
   it('aborts an atomic write so a failed full record leaves no summary', async () => {

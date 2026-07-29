@@ -96,7 +96,7 @@ export function createStoredPhotoRecord(
   idFactory: StoredPhotoIdFactory = browserStoredPhotoIdFactory,
 ): StoredPhotoRecord {
   const capturedAt = Date.parse(result.capturedAt);
-  if (!Number.isFinite(capturedAt)) {
+  if (!isValidCapturedAt(capturedAt)) {
     throw new GalleryStorageError(
       'corrupt-record',
       'The captured photo timestamp is invalid and cannot be saved.',
@@ -152,6 +152,19 @@ function isBlobValue(value: unknown): value is Blob {
   );
 }
 
+export function toValidCapturedAtDate(value: unknown): Date | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+export function isValidCapturedAt(value: unknown): value is number {
+  return toValidCapturedAtDate(value) !== null;
+}
+
 function isFinitePositive(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
 }
@@ -189,8 +202,7 @@ export function isStoredPhotoRecord(
     candidate.schemaVersion === STORED_PHOTO_SCHEMA_VERSION &&
     isBlobValue(candidate.photoBlob) &&
     isBlobValue(candidate.thumbnailBlob) &&
-    typeof candidate.capturedAt === 'number' &&
-    Number.isFinite(candidate.capturedAt) &&
+    isValidCapturedAt(candidate.capturedAt) &&
     isFinitePositive(candidate.width) &&
     isFinitePositive(candidate.height) &&
     typeof candidate.mimeType === 'string' &&
@@ -217,8 +229,7 @@ export function isStoredPhotoSummary(
     candidate.id.length > 0 &&
     candidate.schemaVersion === STORED_PHOTO_SCHEMA_VERSION &&
     isBlobValue(candidate.thumbnailBlob) &&
-    typeof candidate.capturedAt === 'number' &&
-    Number.isFinite(candidate.capturedAt) &&
+    isValidCapturedAt(candidate.capturedAt) &&
     isFinitePositive(candidate.width) &&
     isFinitePositive(candidate.height) &&
     typeof candidate.mimeType === 'string' &&
