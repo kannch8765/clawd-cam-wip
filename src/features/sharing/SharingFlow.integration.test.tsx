@@ -270,11 +270,8 @@ describe('gallery detail sharing integration', () => {
       'clawdcam-20260729-080910.jpg',
       { type: 'image/jpeg', lastModified: capturedAt },
     );
-    expect(createFile).not.toHaveBeenCalledWith(
-      thumbnail,
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(createFile.mock.calls[0][0]).toBe(fullSize);
+    expect(createFile.mock.calls[0][0]).not.toBe(thumbnail);
 
     await act(async () => {
       request.resolve();
@@ -287,10 +284,8 @@ describe('gallery detail sharing integration', () => {
       fullSize,
       'clawdcam-20260729-080910.jpg',
     );
-    expect(downloadBlob).not.toHaveBeenCalledWith(
-      thumbnail,
-      expect.any(String),
-    );
+    expect(downloadBlob.mock.calls[0][0]).toBe(fullSize);
+    expect(downloadBlob.mock.calls[0][0]).not.toBe(thumbnail);
     expect(repository.getPhoto).toHaveBeenCalledWith('gallery-photo');
     expect(repository.savePhoto).not.toHaveBeenCalled();
     expect(repository.deletePhoto).not.toHaveBeenCalled();
