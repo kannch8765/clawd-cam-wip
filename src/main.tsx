@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './app/App';
 import './styles/index.css';
 import './styles/gallery.css';
+import './styles/sharing.css';
 
 registerSW({ immediate: true });
 

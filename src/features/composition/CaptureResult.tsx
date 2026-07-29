@@ -1,5 +1,10 @@
+import { useMemo } from 'react';
 import { useGalleryServices } from '../gallery/galleryServices';
 import { useSavePhoto } from '../gallery/useGallery';
+import { PhotoActions } from '../sharing/PhotoActions';
+import { shareablePhotoFromCaptureResult } from '../sharing/photoFile';
+import { useSharingAdapter } from '../sharing/sharingServices';
+import { usePhotoSharing } from '../sharing/usePhotoSharing';
 import type { PhotoCaptureResult } from './compositionTypes';
 
 interface CaptureResultProps {
@@ -9,6 +14,12 @@ interface CaptureResultProps {
 
 export function CaptureResult({ result, onRetake }: CaptureResultProps) {
   const { repository, createThumbnail, idFactory } = useGalleryServices();
+  const sharingAdapter = useSharingAdapter();
+  const shareablePhoto = useMemo(
+    () => shareablePhotoFromCaptureResult(result),
+    [result],
+  );
+  const photoActions = usePhotoSharing(shareablePhoto, sharingAdapter);
   const savePhoto = useSavePhoto({
     result,
     repository,
@@ -59,12 +70,14 @@ export function CaptureResult({ result, onRetake }: CaptureResultProps) {
         </p>
       )}
 
+      <PhotoActions controller={photoActions} />
+
       <div className="capture-result-actions">
         <button
           className="primary-action"
           type="button"
           onClick={() => void savePhoto.save()}
-          disabled={isSaving || isSaved}
+          disabled={isSaving || isSaved || photoActions.isBusy}
         >
           {isSaving
             ? 'Saving…'
@@ -74,7 +87,12 @@ export function CaptureResult({ result, onRetake }: CaptureResultProps) {
                 ? 'Retry save'
                 : 'Save to gallery'}
         </button>
-        <button className="secondary-action" type="button" onClick={onRetake}>
+        <button
+          className="secondary-action"
+          type="button"
+          onClick={onRetake}
+          disabled={photoActions.isBusy}
+        >
           Retake
         </button>
       </div>
