@@ -149,6 +149,7 @@ export function usePhotoSharing(
   const mountedRef = useRef(false);
   const generationRef = useRef(0);
   const operationRef = useRef<'share' | 'download' | null>(null);
+  const inputRef = useRef({ adapter, photo });
 
   useEffect(() => {
     mountedRef.current = true;
@@ -160,6 +161,14 @@ export function usePhotoSharing(
   }, []);
 
   useEffect(() => {
+    if (
+      inputRef.current.adapter === adapter &&
+      inputRef.current.photo === photo
+    ) {
+      return;
+    }
+
+    inputRef.current = { adapter, photo };
     const generation = generationRef.current + 1;
     generationRef.current = generation;
     operationRef.current = null;
