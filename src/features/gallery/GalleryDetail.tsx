@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PhotoActions } from '../sharing/PhotoActions';
 import { shareablePhotoFromStoredRecord } from '../sharing/photoFile';
-import { useSharingAdapter } from '../sharing/SharingServicesContext';
+import { useSharingAdapter } from '../sharing/sharingServices';
 import { usePhotoSharing } from '../sharing/usePhotoSharing';
 import {
   GalleryStorageError,
