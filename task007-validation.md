@@ -1,6 +1,6 @@
 # Task 007 one-shot validation
 
-- source commit: `30b780e358acac18cfaab1570d417c49fa98b748`
+- source commit: `bf50065f8643a6244fc82bacfbcf0766d13f44f6`
 - command: `npm run check`
 - result: **FAILED**
 
