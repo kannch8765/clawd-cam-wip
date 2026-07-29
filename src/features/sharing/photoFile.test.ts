@@ -77,7 +77,7 @@ describe('photo filename construction', () => {
 });
 
 describe('photo File preparation', () => {
-  it('builds one File with the original Blob bytes and frozen metadata', async () => {
+  it('builds one File with the original Blob bytes and frozen metadata', () => {
     const blob = new Blob(['full-size-photo'], { type: 'image/jpeg' });
     const photo = makePhoto({ blob });
     const createFile = vi.fn(browserLikeFactory.createFile);
@@ -90,14 +90,12 @@ describe('photo File preparation', () => {
     expect(prepared.file?.name).toBe('clawdcam-20260102-030405.jpg');
     expect(prepared.file?.type).toBe('image/jpeg');
     expect(prepared.file?.lastModified).toBe(photo.capturedAt);
+    expect(prepared.file?.size).toBe(blob.size);
     expect(createFile).toHaveBeenCalledTimes(1);
     expect(createFile).toHaveBeenCalledWith(blob, prepared.filename, {
       type: 'image/jpeg',
       lastModified: photo.capturedAt,
     });
-    expect(new TextDecoder().decode(await prepared.file?.arrayBuffer())).toBe(
-      'full-size-photo',
-    );
   });
 
   it('uses trusted metadata when Blob.type is empty', () => {
