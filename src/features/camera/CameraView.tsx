@@ -16,6 +16,7 @@ import { useCamera } from './useCamera';
 interface CameraViewProps {
   adapter?: CameraAdapter;
   compositionAdapter?: CompositionAdapter;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
 }
 
 function useStageContentBoxReady(
@@ -100,8 +101,12 @@ function stateMessage(state: CameraState): string {
 export function CameraView({
   adapter = browserCameraAdapter,
   compositionAdapter = browserCompositionAdapter,
+  headingRef,
 }: CameraViewProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const internalHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const activeHeadingRef = headingRef ?? internalHeadingRef;
+  const wasCapturedRef = useRef(false);
   const {
     state,
     videoRef,
@@ -146,8 +151,19 @@ export function CameraView({
     .filter(Boolean)
     .join(' ');
 
+  useEffect(() => {
+    if (isCaptured && !wasCapturedRef.current) {
+      activeHeadingRef.current?.focus();
+    }
+    wasCapturedRef.current = isCaptured;
+  }, [activeHeadingRef, isCaptured]);
+
   return (
-    <section className="camera-card" aria-labelledby="camera-heading">
+    <section
+      className="camera-card"
+      aria-labelledby="camera-heading"
+      aria-busy={isCapturing}
+    >
       <div ref={stageRef} className="camera-stage" data-testid="camera-stage">
         <video
           ref={videoRef}
@@ -190,13 +206,16 @@ export function CameraView({
       <div className="camera-copy">
         {isCaptured ? (
           <CaptureResult
+            headingRef={activeHeadingRef}
             result={capturedState.result}
             onRetake={photoCapture.retake}
           />
         ) : (
           <>
             <p className="status-pill">{statusLabel(state)}</p>
-            <h2 id="camera-heading">Camera workspace</h2>
+            <h2 id="camera-heading" ref={activeHeadingRef} tabIndex={-1}>
+              Camera workspace
+            </h2>
             <p>{stateMessage(state)}</p>
 
             {state.status === 'idle' && (
@@ -240,6 +259,10 @@ export function CameraView({
                   <p className="overlay-selection">
                     <span>Selected overlay</span>
                     <strong>{REFERENCE_CLAWD_ASSET.label}</strong>
+                  </p>
+                  <p className="reference-asset-notice">
+                    Reference/test overlay for MVP validation — not final
+                    production artwork.
                   </p>
                   <button
                     className="secondary-action overlay-reset"

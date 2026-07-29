@@ -214,7 +214,9 @@ describe('GalleryView detail and deletion', () => {
 
     const label = await screen.findByText('Unknown capture time');
     expect(label.closest('time')).not.toHaveAttribute('datetime');
-    expect(screen.getByAltText('Saved Clawd composition')).toBeInTheDocument();
+    expect(
+      await screen.findByAltText('Saved Clawd composition'),
+    ).toBeInTheDocument();
   });
 
   it('requires confirmation, coalesces repeated delete clicks, and refreshes list', async () => {
@@ -290,7 +292,9 @@ describe('GalleryView detail and deletion', () => {
     });
     await waitFor(() => expect(repository.listPhotos).toHaveBeenCalledTimes(2));
     expect(screen.getByText('Front', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByAltText('Saved Clawd composition')).toBeInTheDocument();
+    expect(
+      await screen.findByAltText('Saved Clawd composition'),
+    ).toBeInTheDocument();
   });
 
   it('keeps detail visible and allows retry after delete failure', async () => {
@@ -315,7 +319,9 @@ describe('GalleryView detail and deletion', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Delete failed.',
     );
-    expect(screen.getByAltText('Saved Clawd composition')).toBeInTheDocument();
+    expect(
+      await screen.findByAltText('Saved Clawd composition'),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Delete photo' }));
     await waitFor(() =>
       expect(repository.deletePhoto).toHaveBeenCalledTimes(2),

@@ -5,6 +5,7 @@ import { App } from './app/App';
 import './styles/index.css';
 import './styles/gallery.css';
 import './styles/sharing.css';
+import './styles/accessibility.css';
 
 registerSW({ immediate: true });
 

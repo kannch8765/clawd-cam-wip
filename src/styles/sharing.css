@@ -18,9 +18,14 @@
 .photo-action-hint,
 .photo-action-status {
   margin: 0.75rem 0 0;
-  color: #6c5e4f;
+  color: #5f5143;
   font-size: 0.9rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.photo-action-feedback {
+  min-height: 1.5rem;
 }
 
 .photo-action-status {
@@ -29,11 +34,12 @@
 
 .photo-action-error {
   margin-top: 0.75rem;
-  border: 1px solid rgba(147, 50, 42, 0.25);
+  border: 1px solid rgb(147 50 42 / 32%);
   border-radius: 0.9rem;
   padding: 0.9rem 1rem;
   background: #fff1ef;
   color: #702d27;
+  overflow-wrap: anywhere;
 }
 
 .photo-action-error p {

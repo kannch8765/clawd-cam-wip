@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "application": "ClawdCam",
+  "version": "0.1.0",
+  "releaseStage": "pre-release-mvp",
+  "automatedChecks": "PASS",
+  "physicalDeviceValidation": "NOT_RUN",
+  "releaseDecision": "READY_WITH_MANUAL_DEVICE_CHECKS",
+  "knownBlockers": [],
+  "knownCaveats": [
+    "All physical-device validation rows are NOT_RUN.",
+    "The bundled Clawd overlay is reference/test artwork, not final production artwork.",
+    "Browser storage may be evicted and private-browsing behavior varies.",
+    "Camera, installation, Web Share, download destination, and Service Worker upgrade behavior require real-device evidence."
+  ],
+  "browserE2E": {
+    "introduced": false,
+    "reason": "Vitest injection boundaries plus static PWA artifact validation cover deterministic contracts without pretending to prove physical browser capabilities."
+  },
+  "task009FeaturesImplemented": false
+}

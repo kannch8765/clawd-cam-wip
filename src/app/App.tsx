@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CameraView } from '../features/camera/CameraView';
 import { GalleryServicesProvider } from '../features/gallery/GalleryRepositoryContext';
 import type { GalleryServices } from '../features/gallery/galleryServices';
@@ -11,11 +11,25 @@ interface AppProps {
 
 export function App({ galleryServices }: AppProps) {
   const [activeView, setActiveView] = useState<'camera' | 'gallery'>('camera');
+  const cameraHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const galleryHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const previousViewRef = useRef(activeView);
   const defaultRepository = useMemo(() => createGalleryRepository(), []);
   const services = useMemo(
     () => ({ repository: defaultRepository, ...galleryServices }),
     [defaultRepository, galleryServices],
   );
+
+  useLayoutEffect(() => {
+    if (previousViewRef.current === activeView) {
+      return;
+    }
+
+    previousViewRef.current = activeView;
+    if (activeView === 'camera') {
+      cameraHeadingRef.current?.focus();
+    }
+  }, [activeView]);
 
   return (
     <GalleryServicesProvider services={services}>
@@ -27,6 +41,7 @@ export function App({ galleryServices }: AppProps) {
           <nav className="app-navigation" aria-label="ClawdCam views">
             <button
               type="button"
+              aria-controls="camera-view"
               aria-current={activeView === 'camera' ? 'page' : undefined}
               onClick={() => setActiveView('camera')}
             >
@@ -34,6 +49,7 @@ export function App({ galleryServices }: AppProps) {
             </button>
             <button
               type="button"
+              aria-controls="gallery-view"
               aria-current={activeView === 'gallery' ? 'page' : undefined}
               onClick={() => setActiveView('gallery')}
             >
@@ -42,14 +58,22 @@ export function App({ galleryServices }: AppProps) {
           </nav>
         </header>
 
-        <div hidden={activeView !== 'camera'}>
-          <CameraView />
+        <div
+          id="camera-view"
+          data-testid="camera-view"
+          hidden={activeView !== 'camera'}
+        >
+          <CameraView headingRef={cameraHeadingRef} />
         </div>
         {activeView === 'gallery' && (
-          <GalleryView
-            repository={services.repository}
-            onBackToCamera={() => setActiveView('camera')}
-          />
+          <div id="gallery-view" data-testid="gallery-view">
+            <GalleryView
+              focusHeadingOnReady
+              headingRef={galleryHeadingRef}
+              repository={services.repository}
+              onBackToCamera={() => setActiveView('camera')}
+            />
+          </div>
         )}
       </main>
     </GalleryServicesProvider>
