@@ -1,6 +1,6 @@
 # Task 007 one-shot validation
 
-- source commit: `2a449f6b563e26b0d6aae95b510c3a22b47156d1`
+- source commit: `d3a3c0eb011b886eb9d46fd270959a3d4c7cd10f`
 - command: `npm run check`
 - result: **FAILED**
 
@@ -14,12 +14,17 @@
 > eslint . --max-warnings=0
 
 
-/home/runner/work/clawd-cam-wip/clawd-cam-wip/src/features/sharing/photoFile.test.ts
-  72:34  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+> clawd-cam@0.1.0 format:check
+> prettier --check . --ignore-unknown
 
-/home/runner/work/clawd-cam-wip/clawd-cam-wip/src/features/sharing/photoFile.ts
-  14:33  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
-
-✖ 2 problems (2 errors, 0 warnings)
-
+Checking formatting...
+[[33mwarn[39m] src/features/sharing/photoFile.test.ts
+[[33mwarn[39m] src/features/sharing/photoFile.ts
+[[33mwarn[39m] src/features/sharing/SharingFlow.integration.test.tsx
+[[33mwarn[39m] src/features/sharing/sharingServices.ts
+[[33mwarn[39m] src/features/sharing/SharingServicesContext.tsx
+[[33mwarn[39m] src/features/sharing/sharingTypes.ts
+[[33mwarn[39m] src/features/sharing/usePhotoSharing.test.tsx
+[[33mwarn[39m] src/features/sharing/usePhotoSharing.ts
+[[33mwarn[39m] Code style issues found in 8 files. Run Prettier with --write to fix.
 ```
