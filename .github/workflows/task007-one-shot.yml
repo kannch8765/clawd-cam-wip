@@ -1,0 +1,56 @@
+name: Task 007 one-shot validation
+
+on:
+  push:
+    branches:
+      - task/007-sharing-download
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out task branch
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run exact quality gate and publish bounded report
+        shell: bash
+        run: |
+          set +e
+          npm run check > task007-check.log 2>&1
+          status=$?
+          result=FAILED
+          if [ "$status" -eq 0 ]; then
+            result=PASSED
+          fi
+
+          {
+            echo "# Task 007 one-shot validation"
+            echo
+            echo "- source commit: \`${GITHUB_SHA}\`"
+            echo "- command: \`npm run check\`"
+            echo "- result: **${result}**"
+            echo
+            echo '```text'
+            tail -n 400 task007-check.log
+            echo '```'
+          } > task007-validation.md
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add task007-validation.md
+          git commit -m "test: record task 007 one-shot validation"
+          git push origin HEAD:task/007-sharing-download
+
+          exit "$status"
