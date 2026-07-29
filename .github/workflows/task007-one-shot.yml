@@ -24,12 +24,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run exact quality gate and publish bounded report
+      - name: Format, run exact quality gate, and publish bounded report
         shell: bash
         run: |
           set +e
+          npm run format > task007-format.log 2>&1
+          format_status=$?
           npm run check > task007-check.log 2>&1
-          status=$?
+          check_status=$?
+          status=$check_status
+          if [ "$format_status" -ne 0 ]; then
+            status=$format_status
+          fi
           result=FAILED
           if [ "$status" -eq 0 ]; then
             result=PASSED
@@ -39,18 +45,20 @@ jobs:
             echo "# Task 007 one-shot validation"
             echo
             echo "- source commit: \`${GITHUB_SHA}\`"
+            echo "- preparation: \`npm run format\`"
             echo "- command: \`npm run check\`"
             echo "- result: **${result}**"
             echo
             echo '```text'
+            tail -n 100 task007-format.log
             tail -n 400 task007-check.log
             echo '```'
           } > task007-validation.md
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add task007-validation.md
-          git commit -m "test: record task 007 one-shot validation"
+          git add -A
+          git commit -m "test: format and validate task 007"
           git push origin HEAD:task/007-sharing-download
 
           exit "$status"
