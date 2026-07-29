@@ -139,8 +139,9 @@ describe('capture result sharing integration', () => {
     const cameraAdapter = createCameraAdapter();
     const compositionAdapter = createCompositionAdapter(photoBlob);
     const repository = createRepository();
-    const createFile = vi.fn((blob: Blob, filename: string, options: FilePropertyBag) =>
-      new File([blob], filename, options),
+    const createFile = vi.fn(
+      (blob: Blob, filename: string, options: FilePropertyBag) =>
+        new File([blob], filename, options),
     );
     const shareFile = vi.fn(async () => undefined);
     const downloadBlob = vi.fn();
@@ -189,7 +190,10 @@ describe('capture result sharing integration', () => {
     expect(createFile).toHaveBeenCalledWith(
       photoBlob,
       'clawdcam-20260729-080910.jpg',
-      { type: 'image/jpeg', lastModified: new Date(2026, 6, 29, 8, 9, 10).getTime() },
+      {
+        type: 'image/jpeg',
+        lastModified: new Date(2026, 6, 29, 8, 9, 10).getTime(),
+      },
     );
     expect(sharedFile.name).toBe('clawdcam-20260729-080910.jpg');
     expect(sharedFile.size).toBe(photoBlob.size);
@@ -232,8 +236,9 @@ describe('gallery detail sharing integration', () => {
       overlayTransform: { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
     };
     const repository = createRepository(record);
-    const createFile = vi.fn((blob: Blob, filename: string, options: FilePropertyBag) =>
-      new File([blob], filename, options),
+    const createFile = vi.fn(
+      (blob: Blob, filename: string, options: FilePropertyBag) =>
+        new File([blob], filename, options),
     );
     const shareFile = vi.fn(() => request.promise);
     const downloadBlob = vi.fn();

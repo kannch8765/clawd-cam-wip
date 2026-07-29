@@ -19,22 +19,19 @@ All matched files use Prettier code style!
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/clawd-cam-wip/clawd-cam-wip[39m
 
- [32m✓[39m src/features/gallery/galleryDatabase.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 77[2mms[22m[39m
- [32m✓[39m src/features/composition/PhotoCapture.integration.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 1293[2mms[22m[39m
-     [33m[2m✓[22m[39m shows the shutter only after camera and decoded asset are ready [33m 459[2mms[22m[39m
- [32m✓[39m src/features/gallery/GalleryView.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 1605[2mms[22m[39m
-     [33m[2m✓[22m[39m prevents an older overlapping list request from replacing the newer one [33m 315[2mms[22m[39m
- [32m✓[39m src/features/camera/CameraView.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 1154[2mms[22m[39m
-     [33m[2m✓[22m[39m requests the rear camera and enters ready after video readiness [33m 423[2mms[22m[39m
- [31m❯[39m src/features/sharing/SharingFlow.integration.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 1016[2mms[22m[39m
-[31m     [31m×[31m captures once, then shares and downloads the original result Blob[39m[33m 565[2mms[22m[39m
-     [32m✓[39m keeps the capture result after the user cancels sharing[32m 212[2mms[22m[39m
-[31m     [31m×[31m loads the full record once and shares and downloads its full-size Blob[39m[32m 124[2mms[22m[39m
-     [32m✓[39m disables Delete during sharing and keeps detail after cancellation[32m 111[2mms[22m[39m
- [32m✓[39m src/features/composition/captureLifecycle.regression.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 810[2mms[22m[39m
-     [33m[2m✓[22m[39m recovers after an asset decode failure and retry [33m 561[2mms[22m[39m
- [32m✓[39m src/features/sharing/usePhotoSharing.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 989[2mms[22m[39m
-     [33m[2m✓[22m[39m keeps Download when navigator.share is unavailable [33m 314[2mms[22m[39m
+ [32m✓[39m src/features/gallery/galleryDatabase.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+ [32m✓[39m src/features/gallery/GalleryView.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 1209[2mms[22m[39m
+     [33m[2m✓[22m[39m shows loading and then the empty gallery action [33m 325[2mms[22m[39m
+ [32m✓[39m src/features/composition/PhotoCapture.integration.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 1463[2mms[22m[39m
+     [33m[2m✓[22m[39m shows the shutter only after camera and decoded asset are ready [33m 455[2mms[22m[39m
+ [32m✓[39m src/features/camera/CameraView.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 1013[2mms[22m[39m
+     [33m[2m✓[22m[39m requests the rear camera and enters ready after video readiness [33m 369[2mms[22m[39m
+ [32m✓[39m src/features/composition/captureLifecycle.regression.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 745[2mms[22m[39m
+     [33m[2m✓[22m[39m recovers after an asset decode failure and retry [33m 513[2mms[22m[39m
+ [31m❯[39m src/features/sharing/SharingFlow.integration.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 861[2mms[22m[39m
+     [33m[2m✓[22m[39m captures once, then shares, downloads, and independently saves the original Blob [33m 653[2mms[22m[39m
+[31m     [31m×[31m shares and downloads the full record Blob while protecting Delete[39m[32m 204[2mms[22m[39m
+ [32m✓[39m src/features/sharing/usePhotoSharing.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 824[2mms[22m[39m
  [32m✓[39m src/features/composition/composePhoto.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 19[2mms[22m[39m
 [90mstderr[2m | src/features/gallery/CaptureSave.integration.test.tsx[2m > [22m[2mcapture result gallery save[2m > [22m[2mshows an explicit Save to gallery action without auto-saving
 [22m[39mAn update to CaptureResult inside a test was not wrapped in act(...).
@@ -48,8 +45,7 @@ act(() => {
 
 This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
 
- [32m✓[39m src/features/gallery/CaptureSave.integration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 774[2mms[22m[39m
-     [33m[2m✓[22m[39m shows an explicit Save to gallery action without auto-saving [33m 333[2mms[22m[39m
+ [32m✓[39m src/features/gallery/CaptureSave.integration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 679[2mms[22m[39m
 [90mstderr[2m | src/features/overlay/CameraOverlay.test.tsx[2m > [22m[2mcamera overlay integration[2m > [22m[2mdoes not show an interactive overlay before the camera is ready
 [22m[39mAn update to CameraView inside a test was not wrapped in act(...).
 
@@ -62,21 +58,21 @@ act(() => {
 
 This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
 
- [32m✓[39m src/features/overlay/CameraOverlay.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 796[2mms[22m[39m
- [32m✓[39m src/features/composition/captureGeometry.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/features/gallery/GalleryFlow.integration.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 958[2mms[22m[39m
-     [33m[2m✓[22m[39m captures, saves, reloads, opens detail, and deletes one photo [33m 954[2mms[22m[39m
- [32m✓[39m src/features/overlay/referenceAsset.node.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 61[2mms[22m[39m
- [32m✓[39m src/features/sharing/photoFile.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/features/gallery/thumbnail.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m src/features/overlay/PinchDragCoordination.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 380[2mms[22m[39m
-     [33m[2m✓[22m[39m suppresses the original drag until it fully ends after a two-pointer pinch [33m 377[2mms[22m[39m
- [32m✓[39m src/features/camera/cameraAdapter.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/features/overlay/CameraOverlay.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 767[2mms[22m[39m
+ [32m✓[39m src/features/composition/captureGeometry.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/features/overlay/referenceAsset.node.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m src/features/gallery/GalleryFlow.integration.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 857[2mms[22m[39m
+     [33m[2m✓[22m[39m captures, saves, reloads, opens detail, and deletes one photo [33m 851[2mms[22m[39m
+ [32m✓[39m src/features/sharing/photoFile.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/features/gallery/thumbnail.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/features/overlay/PinchDragCoordination.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 363[2mms[22m[39m
+     [33m[2m✓[22m[39m suppresses the original drag until it fully ends after a two-pointer pinch [33m 359[2mms[22m[39m
+ [32m✓[39m src/features/camera/cameraAdapter.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 21[2mms[22m[39m
  [32m✓[39m src/features/sharing/sharingAdapter.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m src/features/overlay/overlayGeometry.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/features/overlay/overlayGeometry.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
  [32m✓[39m src/features/composition/captureAdapter.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m src/features/overlay/overlayAssets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/features/overlay/useOverlayController.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 322[2mms[22m[39m
+ [32m✓[39m src/features/overlay/overlayAssets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/features/overlay/useOverlayController.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 306[2mms[22m[39m
 [90mstderr[2m | src/app/App.test.tsx[2m > [22m[2mApp[2m > [22m[2mrenders the camera foundation without requesting permission
 [22m[39mAn update to CameraView inside a test was not wrapped in act(...).
 
@@ -89,41 +85,46 @@ act(() => {
 
 This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
 
- [32m✓[39m src/app/App.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m src/app/App.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 199[2mms[22m[39m
 
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
 
-[41m[1m FAIL [22m[49m src/features/sharing/SharingFlow.integration.test.tsx[2m > [22mcapture result sharing integration[2m > [22mcaptures once, then shares and downloads the original result Blob
-[31m[1mTypeError[22m: sharedFile.arrayBuffer is not a function[39m
-[36m [2m❯[22m src/features/sharing/SharingFlow.integration.test.tsx:[2m182:54[22m[39m
-    [90m180|[39m     [35mawait[39m screen[33m.[39m[34mfindByText[39m([32m'Share sheet closed.'[39m)[33m;[39m
-    [90m181|[39m     [35mconst[39m sharedFile [33m=[39m shareFile[33m.[39mmock[33m.[39mcalls[[34m0[39m][[34m0[39m][33m;[39m
-    [90m182|[39m     expect(new TextDecoder().decode(await sharedFile.arrayBuffer())).t…
-    [90m   |[39m                                                      [31m^[39m
-    [90m183|[39m       [32m'full-size-capture'[39m[33m,[39m
-    [90m184|[39m     )[33m;[39m
+[41m[1m FAIL [22m[49m src/features/sharing/SharingFlow.integration.test.tsx[2m > [22mgallery detail sharing integration[2m > [22mshares and downloads the full record Blob while protecting Delete
+[31m[1mAssertionError[22m: expected "vi.fn()" to not be called with arguments: [ Blob{ …(1) }, Any<String>, …(1) ][90m
 
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+Received:
 
-[41m[1m FAIL [22m[49m src/features/sharing/SharingFlow.integration.test.tsx[2m > [22mgallery detail sharing integration[2m > [22mloads the full record once and shares and downloads its full-size Blob
-[31m[1mTypeError[22m: shareFile.mock.calls[0][0].arrayBuffer is not a function[39m
-[36m [2m❯[22m src/features/sharing/SharingFlow.integration.test.tsx:[2m284:65[22m[39m
-    [90m282|[39m     [35mawait[39m screen[33m.[39m[34mfindByText[39m([32m'Share sheet closed.'[39m)[33m;[39m
-    [90m283|[39m     [34mexpect[39m(
-    [90m284|[39m       new TextDecoder().decode(await shareFile.mock.calls[0][0].arrayB…
-    [90m   |[39m                                                                 [31m^[39m
-    [90m285|[39m     )[33m.[39m[34mtoBe[39m([32m'full-size-gallery'[39m)[33m;[39m
-    [90m286|[39m
+[1m  1st vi.fn() call:
 
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+[22m[2m  [[22m
+[2m    Blob {},[22m
+[32m-   Any<String>,[90m
+[32m-   Any<Object>,[90m
+[31m+   "clawdcam-20260729-080910.jpg",[90m
+[31m+   {[90m
+[31m+     "lastModified": 1785312550000,[90m
+[31m+     "type": "image/jpeg",[90m
+[31m+   },[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m src/features/sharing/SharingFlow.integration.test.tsx:[2m273:28[22m[39m
+    [90m271|[39m       { type[33m:[39m [32m'image/jpeg'[39m[33m,[39m lastModified[33m:[39m capturedAt }[33m,[39m
+    [90m272|[39m     )[33m;[39m
+    [90m273|[39m     [34mexpect[39m(createFile)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m   |[39m                            [31m^[39m
+    [90m274|[39m       thumbnail[33m,[39m
+    [90m275|[39m       expect[33m.[39m[34many[39m([33mString[39m)[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
 
 
 [2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (23)[39m
-[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m183 passed[39m[22m[90m (185)[39m
-[2m   Start at [22m 07:52:07
-[2m   Duration [22m 13.37s[2m (transform 1.21s, setup 2.15s, import 4.07s, tests 10.59s, environment 17.94s)[22m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m182 passed[39m[22m[90m (183)[39m
+[2m   Start at [22m 07:53:01
+[2m   Duration [22m 12.49s[2m (transform 1.25s, setup 2.04s, import 3.80s, tests 9.60s, environment 16.75s)[22m
 
 
-::error file=/home/runner/work/clawd-cam-wip/clawd-cam-wip/src/features/sharing/SharingFlow.integration.test.tsx,title=src/features/sharing/SharingFlow.integration.test.tsx > capture result sharing integration > captures once%2C then shares and downloads the original result Blob,line=182,column=54::TypeError: sharedFile.arrayBuffer is not a function%0A ❯ src/features/sharing/SharingFlow.integration.test.tsx:182:54%0A%0A
-
-::error file=/home/runner/work/clawd-cam-wip/clawd-cam-wip/src/features/sharing/SharingFlow.integration.test.tsx,title=src/features/sharing/SharingFlow.integration.test.tsx > gallery detail sharing integration > loads the full record once and shares and downloads its full-size Blob,line=284,column=65::TypeError: shareFile.mock.calls[0][0].arrayBuffer is not a function%0A ❯ src/features/sharing/SharingFlow.integration.test.tsx:284:65%0A%0A
+::error file=/home/runner/work/clawd-cam-wip/clawd-cam-wip/src/features/sharing/SharingFlow.integration.test.tsx,title=src/features/sharing/SharingFlow.integration.test.tsx > gallery detail sharing integration > shares and downloads the full record Blob while protecting Delete,line=273,column=28::AssertionError: expected "vi.fn()" to not be called with arguments: [ Blob{ …(1) }, Any<String>, …(1) ]%0A%0AReceived:%0A%0A  1st vi.fn() call:%0A%0A  [%0A    Blob {},%0A-   Any<String>,%0A-   Any<Object>,%0A+   "clawdcam-20260729-080910.jpg",%0A+   {%0A+     "lastModified": 1785312550000,%0A+     "type": "image/jpeg",%0A+   },%0A  ]%0A%0A%0ANumber of calls: 1%0A%0A ❯ src/features/sharing/SharingFlow.integration.test.tsx:273:28%0A%0A
