@@ -69,7 +69,13 @@ describe('photo filename construction', () => {
       new Date(2026, 6, 29, 16, 5, 9).getTime(),
       'image/jpeg',
     );
-    expect(filename).not.toMatch(/[\\/:\u0000-\u001f\u007f]/);
+    expect(filename).not.toMatch(/[\\/:]/);
+    expect(
+      [...filename].every((character) => {
+        const code = character.charCodeAt(0);
+        return code > 0x1f && code !== 0x7f;
+      }),
+    ).toBe(true);
   });
 });
 
