@@ -22,6 +22,7 @@ function statusMessage(controller: PhotoSharingController): string | null {
 
 function capabilityMessage(controller: PhotoSharingController): string | null {
   switch (controller.capability.status) {
+    case 'photo-invalid':
     case 'file-share-supported':
       return null;
     case 'unsupported':

@@ -22,6 +22,14 @@ function getCanShareFunction(): Navigator['canShare'] | null {
     : null;
 }
 
+function scheduleObjectUrlRevocation(objectUrl: string): void {
+  try {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  } catch {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export const browserSharingAdapter: SharingAdapter = {
   supportsFile() {
     return typeof File === 'function';
@@ -59,17 +67,21 @@ export const browserSharingAdapter: SharingAdapter = {
 
   downloadBlob(blob, filename) {
     const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
+    let anchor: HTMLAnchorElement | null = null;
 
     try {
+      anchor = document.createElement('a');
       anchor.href = objectUrl;
       anchor.download = filename;
       anchor.hidden = true;
       document.body.append(anchor);
       anchor.click();
     } finally {
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+      try {
+        anchor?.remove();
+      } finally {
+        scheduleObjectUrlRevocation(objectUrl);
+      }
     }
   },
 };

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { preparePhoto, type PreparedPhoto } from './photoFile';
 import type { SharingAdapter } from './sharingAdapter';
 import {
@@ -34,11 +41,15 @@ export function detectFileShareCapability(
   adapter: SharingAdapter,
   prepared: PreparedPhotoResult,
 ): FileShareCapability {
+  if (!prepared.ok) {
+    return { status: 'photo-invalid' };
+  }
+
   if (!adapter.hasShare()) {
     return { status: 'unsupported' };
   }
 
-  if (!adapter.hasCanShare() || !prepared.ok || !prepared.value.file) {
+  if (!adapter.hasCanShare() || !prepared.value.file) {
     return { status: 'text-only' };
   }
 
@@ -160,7 +171,7 @@ export function usePhotoSharing(
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (
       inputRef.current.adapter === adapter &&
       inputRef.current.photo === photo
@@ -207,6 +218,7 @@ export function usePhotoSharing(
     operationRef.current = 'share';
     const generation = generationRef.current + 1;
     generationRef.current = generation;
+    const operationInput = inputRef.current;
     if (mountedRef.current) {
       setState({ status: 'sharing' });
     }
@@ -214,21 +226,32 @@ export function usePhotoSharing(
     try {
       const request = adapter.shareFile(prepared.value.file);
       await request;
-      if (mountedRef.current && generationRef.current === generation) {
+      if (
+        mountedRef.current &&
+        generationRef.current === generation &&
+        inputRef.current === operationInput
+      ) {
         setState({ status: 'shared' });
       }
     } catch (error) {
-      if (!mountedRef.current || generationRef.current !== generation) {
+      if (
+        !mountedRef.current ||
+        generationRef.current !== generation ||
+        inputRef.current !== operationInput
+      ) {
         return;
       }
       const classified = classifyShareFailure(error);
-      setState(
-        classified.cancelled
-          ? { status: 'cancelled' }
-          : { status: 'error', error: classified.error },
-      );
+      if (classified.cancelled) {
+        setState({ status: 'cancelled' });
+      } else {
+        setState({ status: 'error', error: classified.error });
+      }
     } finally {
-      if (generationRef.current === generation) {
+      if (
+        generationRef.current === generation &&
+        inputRef.current === operationInput
+      ) {
         operationRef.current = null;
       }
     }
@@ -249,17 +272,26 @@ export function usePhotoSharing(
     operationRef.current = 'download';
     const generation = generationRef.current + 1;
     generationRef.current = generation;
+    const operationInput = inputRef.current;
     if (mountedRef.current) {
       setState({ status: 'downloading' });
     }
 
     try {
       adapter.downloadBlob(prepared.value.photo.blob, prepared.value.filename);
-      if (mountedRef.current && generationRef.current === generation) {
+      if (
+        mountedRef.current &&
+        generationRef.current === generation &&
+        inputRef.current === operationInput
+      ) {
         setState({ status: 'download-started' });
       }
     } catch (error) {
-      if (mountedRef.current && generationRef.current === generation) {
+      if (
+        mountedRef.current &&
+        generationRef.current === generation &&
+        inputRef.current === operationInput
+      ) {
         setState({
           status: 'error',
           error: new PhotoActionError(
@@ -270,16 +302,25 @@ export function usePhotoSharing(
         });
       }
     } finally {
-      if (generationRef.current === generation) {
+      if (
+        generationRef.current === generation &&
+        inputRef.current === operationInput
+      ) {
         operationRef.current = null;
       }
     }
   }, [adapter, prepared]);
 
+  const presentedState: PhotoActionState = prepared.ok
+    ? state
+    : { status: 'error', error: prepared.error };
+
   return {
-    state,
+    state: presentedState,
     capability,
-    isBusy: state.status === 'sharing' || state.status === 'downloading',
+    isBusy:
+      presentedState.status === 'sharing' ||
+      presentedState.status === 'downloading',
     canDownload: prepared.ok,
     filename: prepared.ok ? prepared.value.filename : null,
     share,
