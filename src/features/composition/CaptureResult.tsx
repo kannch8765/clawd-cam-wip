@@ -3,7 +3,7 @@ import { useGalleryServices } from '../gallery/galleryServices';
 import { useSavePhoto } from '../gallery/useGallery';
 import { PhotoActions } from '../sharing/PhotoActions';
 import { shareablePhotoFromCaptureResult } from '../sharing/photoFile';
-import { useSharingAdapter } from '../sharing/SharingServicesContext';
+import { useSharingAdapter } from '../sharing/sharingServices';
 import { usePhotoSharing } from '../sharing/usePhotoSharing';
 import type { PhotoCaptureResult } from './compositionTypes';
 
