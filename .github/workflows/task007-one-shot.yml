@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: task007-one-shot
+  cancel-in-progress: true
+
 jobs:
   validate:
     if: github.actor != 'github-actions[bot]'
