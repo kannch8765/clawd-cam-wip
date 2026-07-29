@@ -26,7 +26,8 @@ src/
       sharingTypes.ts               Read-only input, capability, state, and errors
       photoFile.ts                  MIME validation, filename, and File construction
       sharingAdapter.ts             Web Share and download browser boundary
-      SharingServicesContext.tsx    Injectable sharing adapter
+      sharingServices.ts            Sharing context and consumer hook
+      SharingServicesContext.tsx    Injectable provider for UI and tests
       usePhotoSharing.ts            Operation arbitration and stale-result protection
       PhotoActions.tsx              Accessible Share/Download controls
   styles/
