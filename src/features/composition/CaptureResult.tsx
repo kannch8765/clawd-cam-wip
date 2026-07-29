@@ -1,3 +1,5 @@
+import { useGalleryServices } from '../gallery/galleryServices';
+import { useSavePhoto } from '../gallery/useGallery';
 import type { PhotoCaptureResult } from './compositionTypes';
 
 interface CaptureResultProps {
@@ -6,6 +8,16 @@ interface CaptureResultProps {
 }
 
 export function CaptureResult({ result, onRetake }: CaptureResultProps) {
+  const { repository, createThumbnail, idFactory } = useGalleryServices();
+  const savePhoto = useSavePhoto({
+    result,
+    repository,
+    createThumbnail,
+    idFactory,
+  });
+  const isSaving = savePhoto.state.status === 'saving';
+  const isSaved = savePhoto.state.status === 'saved';
+
   return (
     <div className="capture-result-copy">
       <p className="status-pill">Photo captured</p>
@@ -30,9 +42,42 @@ export function CaptureResult({ result, onRetake }: CaptureResultProps) {
           <dd>{result.overlayAssetId}</dd>
         </div>
       </dl>
-      <button className="primary-action" type="button" onClick={onRetake}>
-        Retake
-      </button>
+
+      {savePhoto.state.status === 'error' && (
+        <div className="gallery-error" role="alert">
+          <strong>Photo was not saved</strong>
+          <p>
+            {savePhoto.state.error.code === 'quota-exceeded'
+              ? 'This device does not have enough browser storage. The captured photo is still available here, so you can retry.'
+              : savePhoto.state.error.message}
+          </p>
+        </div>
+      )}
+      {isSaved && (
+        <p className="gallery-save-success" role="status">
+          Saved to the local gallery.
+        </p>
+      )}
+
+      <div className="capture-result-actions">
+        <button
+          className="primary-action"
+          type="button"
+          onClick={() => void savePhoto.save()}
+          disabled={isSaving || isSaved}
+        >
+          {isSaving
+            ? 'Saving…'
+            : isSaved
+              ? 'Saved to gallery'
+              : savePhoto.state.status === 'error'
+                ? 'Retry save'
+                : 'Save to gallery'}
+        </button>
+        <button className="secondary-action" type="button" onClick={onRetake}>
+          Retake
+        </button>
+      </div>
     </div>
   );
 }
