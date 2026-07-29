@@ -1,8 +1,5 @@
 import { createContext, useContext } from 'react';
-import {
-  browserSharingAdapter,
-  type SharingAdapter,
-} from './sharingAdapter';
+import { browserSharingAdapter, type SharingAdapter } from './sharingAdapter';
 
 export const SharingAdapterContext = createContext<SharingAdapter>(
   browserSharingAdapter,

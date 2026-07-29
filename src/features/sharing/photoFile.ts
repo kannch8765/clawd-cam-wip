@@ -1,9 +1,6 @@
 import type { PhotoCaptureResult } from '../composition/compositionTypes';
 import type { StoredPhotoRecord } from '../gallery/galleryTypes';
-import {
-  PhotoActionError,
-  type ShareablePhoto,
-} from './sharingTypes';
+import { PhotoActionError, type ShareablePhoto } from './sharingTypes';
 
 const MIME_EXTENSIONS: Readonly<Record<string, string>> = {
   'image/jpeg': 'jpg',
@@ -13,11 +10,7 @@ const MIME_EXTENSIONS: Readonly<Record<string, string>> = {
 
 export interface PhotoFileFactory {
   supportsFile(): boolean;
-  createFile(
-    blob: Blob,
-    filename: string,
-    options: FilePropertyBag,
-  ): File;
+  createFile(blob: Blob, filename: string, options: FilePropertyBag): File;
 }
 
 export interface PreparedPhoto {

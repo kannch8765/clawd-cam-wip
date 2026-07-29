@@ -10,9 +10,7 @@ import {
 } from './photoFile';
 import { PhotoActionError, type ShareablePhoto } from './sharingTypes';
 
-function makePhoto(
-  overrides: Partial<ShareablePhoto> = {},
-): ShareablePhoto {
+function makePhoto(overrides: Partial<ShareablePhoto> = {}): ShareablePhoto {
   return {
     blob: new Blob(['full-size'], { type: 'image/jpeg' }),
     mimeType: 'image/jpeg',
@@ -27,8 +25,7 @@ function makePhoto(
 
 const browserLikeFactory: PhotoFileFactory = {
   supportsFile: () => true,
-  createFile: (blob, filename, options) =>
-    new File([blob], filename, options),
+  createFile: (blob, filename, options) => new File([blob], filename, options),
 };
 
 describe('photo filename construction', () => {

@@ -69,7 +69,9 @@ describe('photo sharing capability detection', () => {
 
     expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
-    expect(screen.getByText(/System file sharing is unavailable/)).toBeVisible();
+    expect(
+      screen.getByText(/System file sharing is unavailable/),
+    ).toBeVisible();
   });
 
   it('classifies share without canShare as text-only', () => {

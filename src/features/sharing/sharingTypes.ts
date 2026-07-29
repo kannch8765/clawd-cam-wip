@@ -11,10 +11,7 @@ export interface ShareablePhoto {
 }
 
 export type FileShareCapabilityStatus =
-  | 'unsupported'
-  | 'text-only'
-  | 'file-share-supported'
-  | 'file-rejected';
+  'unsupported' | 'text-only' | 'file-share-supported' | 'file-rejected';
 
 export interface FileShareCapability {
   status: FileShareCapabilityStatus;

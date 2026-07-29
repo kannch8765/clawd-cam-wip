@@ -270,17 +270,18 @@ describe('gallery detail sharing integration', () => {
     );
 
     fireEvent.click(
-      await screen.findByRole('button', { name: /Saved Clawd photo thumbnail/ }),
+      await screen.findByRole('button', {
+        name: /Saved Clawd photo thumbnail/,
+      }),
     );
     await screen.findByAltText('Saved Clawd composition');
-    const revokesBeforeActions = vi.mocked(URL.revokeObjectURL).mock.calls.length;
+    const revokesBeforeActions = vi.mocked(URL.revokeObjectURL).mock.calls
+      .length;
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await screen.findByText('Share sheet closed.');
     expect(
-      new TextDecoder().decode(
-        await shareFile.mock.calls[0][0].arrayBuffer(),
-      ),
+      new TextDecoder().decode(await shareFile.mock.calls[0][0].arrayBuffer()),
     ).toBe('full-size-gallery');
 
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
@@ -288,7 +289,10 @@ describe('gallery detail sharing integration', () => {
       fullSize,
       'clawdcam-20260729-080910.jpg',
     );
-    expect(downloadBlob).not.toHaveBeenCalledWith(thumbnail, expect.any(String));
+    expect(downloadBlob).not.toHaveBeenCalledWith(
+      thumbnail,
+      expect.any(String),
+    );
     expect(repository.getPhoto).toHaveBeenCalledWith('gallery-photo');
     expect(repository.savePhoto).not.toHaveBeenCalled();
     expect(repository.deletePhoto).not.toHaveBeenCalled();
@@ -324,7 +328,9 @@ describe('gallery detail sharing integration', () => {
     );
 
     fireEvent.click(
-      await screen.findByRole('button', { name: /Saved Clawd photo thumbnail/ }),
+      await screen.findByRole('button', {
+        name: /Saved Clawd photo thumbnail/,
+      }),
     );
     await screen.findByAltText('Saved Clawd composition');
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));

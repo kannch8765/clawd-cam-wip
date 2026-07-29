@@ -182,10 +182,7 @@ export function usePhotoSharing(
       return;
     }
 
-    if (
-      capability.status !== 'file-share-supported' ||
-      !prepared.value.file
-    ) {
+    if (capability.status !== 'file-share-supported' || !prepared.value.file) {
       const error =
         prepared.value.fileError ??
         new PhotoActionError(
@@ -248,10 +245,7 @@ export function usePhotoSharing(
     }
 
     try {
-      adapter.downloadBlob(
-        prepared.value.photo.blob,
-        prepared.value.filename,
-      );
+      adapter.downloadBlob(prepared.value.photo.blob, prepared.value.filename);
       if (mountedRef.current && generationRef.current === generation) {
         setState({ status: 'download-started' });
       }
