@@ -143,7 +143,9 @@ describe('capture result sharing integration', () => {
       (blob: Blob, filename: string, options: FilePropertyBag) =>
         new File([blob], filename, options),
     );
-    const shareFile = vi.fn(async () => undefined);
+    const shareFile = vi.fn(async (file: File) => {
+      void file;
+    });
     const downloadBlob = vi.fn();
     const sharingAdapter = createSharingAdapter({
       createFile,
@@ -240,7 +242,10 @@ describe('gallery detail sharing integration', () => {
       (blob: Blob, filename: string, options: FilePropertyBag) =>
         new File([blob], filename, options),
     );
-    const shareFile = vi.fn(() => request.promise);
+    const shareFile = vi.fn((file: File) => {
+      void file;
+      return request.promise;
+    });
     const downloadBlob = vi.fn();
     const sharingAdapter = createSharingAdapter({
       createFile,
