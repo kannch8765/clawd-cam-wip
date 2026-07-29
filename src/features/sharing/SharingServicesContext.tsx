@@ -1,12 +1,9 @@
-import { createContext, useContext, type PropsWithChildren } from 'react';
+import { type PropsWithChildren } from 'react';
 import {
   browserSharingAdapter,
   type SharingAdapter,
 } from './sharingAdapter';
-
-const SharingAdapterContext = createContext<SharingAdapter>(
-  browserSharingAdapter,
-);
+import { SharingAdapterContext } from './sharingServices';
 
 interface SharingServicesProviderProps extends PropsWithChildren {
   adapter?: SharingAdapter;
@@ -21,8 +18,4 @@ export function SharingServicesProvider({
       {children}
     </SharingAdapterContext.Provider>
   );
-}
-
-export function useSharingAdapter(): SharingAdapter {
-  return useContext(SharingAdapterContext);
 }
