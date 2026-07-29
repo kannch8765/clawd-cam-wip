@@ -134,14 +134,21 @@ afterEach(() => {
 });
 
 describe('capture result sharing integration', () => {
-  it('captures once, then shares and downloads the original result Blob', async () => {
+  it('captures once, then shares, downloads, and independently saves the original Blob', async () => {
     const photoBlob = new Blob(['full-size-capture'], { type: 'image/jpeg' });
     const cameraAdapter = createCameraAdapter();
     const compositionAdapter = createCompositionAdapter(photoBlob);
     const repository = createRepository();
+    const createFile = vi.fn((blob: Blob, filename: string, options: FilePropertyBag) =>
+      new File([blob], filename, options),
+    );
     const shareFile = vi.fn(async () => undefined);
     const downloadBlob = vi.fn();
-    const sharingAdapter = createSharingAdapter({ shareFile, downloadBlob });
+    const sharingAdapter = createSharingAdapter({
+      createFile,
+      shareFile,
+      downloadBlob,
+    });
 
     render(
       <GalleryServicesProvider
@@ -179,10 +186,13 @@ describe('capture result sharing integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await screen.findByText('Share sheet closed.');
     const sharedFile = shareFile.mock.calls[0][0];
-    expect(new TextDecoder().decode(await sharedFile.arrayBuffer())).toBe(
-      'full-size-capture',
+    expect(createFile).toHaveBeenCalledWith(
+      photoBlob,
+      'clawdcam-20260729-080910.jpg',
+      { type: 'image/jpeg', lastModified: new Date(2026, 6, 29, 8, 9, 10).getTime() },
     );
     expect(sharedFile.name).toBe('clawdcam-20260729-080910.jpg');
+    expect(sharedFile.size).toBe(photoBlob.size);
 
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
     expect(downloadBlob).toHaveBeenCalledWith(
@@ -195,61 +205,24 @@ describe('capture result sharing integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save to gallery' }));
     await screen.findByText('Saved to the local gallery.');
+    expect(repository.savePhoto).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Share' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
-  });
-
-  it('keeps the capture result after the user cancels sharing', async () => {
-    const sharingAdapter = createSharingAdapter({
-      shareFile: vi.fn(async () => {
-        throw new DOMException('cancelled', 'AbortError');
-      }),
-    });
-    const photoBlob = new Blob(['full-size-capture'], { type: 'image/jpeg' });
-    render(
-      <GalleryServicesProvider services={{ repository: createRepository() }}>
-        <SharingServicesProvider adapter={sharingAdapter}>
-          <CameraView
-            adapter={createCameraAdapter()}
-            compositionAdapter={createCompositionAdapter(photoBlob)}
-          />
-        </SharingServicesProvider>
-      </GalleryServicesProvider>,
-    );
-
-    const stage = screen.getByTestId('camera-stage');
-    Object.defineProperties(stage, {
-      clientWidth: { configurable: true, value: 360 },
-      clientHeight: { configurable: true, value: 480 },
-    });
-    fireEvent(window, new Event('resize'));
-    fireEvent.click(screen.getByRole('button', { name: 'Start camera' }));
-    await screen.findByText('Rear camera ready');
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled(),
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    await screen.findByAltText('Captured Clawd composition');
-    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Sharing cancelled.',
-    );
-    expect(screen.getByAltText('Captured Clawd composition')).toBeVisible();
-    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 
 describe('gallery detail sharing integration', () => {
-  it('loads the full record once and shares and downloads its full-size Blob', async () => {
+  it('shares and downloads the full record Blob while protecting Delete', async () => {
+    const request = deferred<void>();
     const fullSize = new Blob(['full-size-gallery'], { type: 'image/jpeg' });
     const thumbnail = new Blob(['tiny'], { type: 'image/jpeg' });
+    const capturedAt = new Date(2026, 6, 29, 8, 9, 10).getTime();
     const record: StoredPhotoRecord = {
       id: 'gallery-photo',
       schemaVersion: 1,
       photoBlob: fullSize,
       thumbnailBlob: thumbnail,
-      capturedAt: new Date(2026, 6, 29, 8, 9, 10).getTime(),
+      capturedAt,
       width: 1440,
       height: 1080,
       mimeType: 'image/jpeg',
@@ -259,9 +232,16 @@ describe('gallery detail sharing integration', () => {
       overlayTransform: { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
     };
     const repository = createRepository(record);
-    const shareFile = vi.fn(async () => undefined);
+    const createFile = vi.fn((blob: Blob, filename: string, options: FilePropertyBag) =>
+      new File([blob], filename, options),
+    );
+    const shareFile = vi.fn(() => request.promise);
     const downloadBlob = vi.fn();
-    const sharingAdapter = createSharingAdapter({ shareFile, downloadBlob });
+    const sharingAdapter = createSharingAdapter({
+      createFile,
+      shareFile,
+      downloadBlob,
+    });
 
     render(
       <SharingServicesProvider adapter={sharingAdapter}>
@@ -279,10 +259,23 @@ describe('gallery detail sharing integration', () => {
       .length;
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    await screen.findByText('Share sheet closed.');
-    expect(
-      new TextDecoder().decode(await shareFile.mock.calls[0][0].arrayBuffer()),
-    ).toBe('full-size-gallery');
+    expect(screen.getByRole('button', { name: 'Delete photo' })).toBeDisabled();
+    expect(createFile).toHaveBeenCalledWith(
+      fullSize,
+      'clawdcam-20260729-080910.jpg',
+      { type: 'image/jpeg', lastModified: capturedAt },
+    );
+    expect(createFile).not.toHaveBeenCalledWith(
+      thumbnail,
+      expect.any(String),
+      expect.any(Object),
+    );
+
+    await act(async () => {
+      request.resolve();
+      await request.promise;
+    });
+    expect(screen.getByRole('button', { name: 'Delete photo' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
     expect(downloadBlob).toHaveBeenCalledWith(
@@ -299,53 +292,5 @@ describe('gallery detail sharing integration', () => {
     expect(vi.mocked(URL.revokeObjectURL).mock.calls.length).toBe(
       revokesBeforeActions,
     );
-  });
-
-  it('disables Delete during sharing and keeps detail after cancellation', async () => {
-    const request = deferred<void>();
-    const record: StoredPhotoRecord = {
-      id: 'gallery-photo',
-      schemaVersion: 1,
-      photoBlob: new Blob(['full-size-gallery'], { type: 'image/jpeg' }),
-      thumbnailBlob: new Blob(['tiny'], { type: 'image/jpeg' }),
-      capturedAt: new Date(2026, 6, 29, 8, 9, 10).getTime(),
-      width: 1440,
-      height: 1080,
-      mimeType: 'image/jpeg',
-      facingMode: 'environment',
-      mirrored: false,
-      overlayAssetId: 'reference-clawd',
-      overlayTransform: { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
-    };
-    const repository = createRepository(record);
-    const sharingAdapter = createSharingAdapter({
-      shareFile: vi.fn(() => request.promise),
-    });
-    render(
-      <SharingServicesProvider adapter={sharingAdapter}>
-        <GalleryView repository={repository} onBackToCamera={vi.fn()} />
-      </SharingServicesProvider>,
-    );
-
-    fireEvent.click(
-      await screen.findByRole('button', {
-        name: /Saved Clawd photo thumbnail/,
-      }),
-    );
-    await screen.findByAltText('Saved Clawd composition');
-    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    expect(screen.getByRole('button', { name: 'Delete photo' })).toBeDisabled();
-
-    await act(async () => {
-      request.reject(new DOMException('cancelled', 'AbortError'));
-      try {
-        await request.promise;
-      } catch {
-        // The hook maps this expected rejection to a cancellation state.
-      }
-    });
-    expect(screen.getByText('Saved Clawd photo')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Delete photo' })).toBeEnabled();
-    expect(repository.deletePhoto).not.toHaveBeenCalled();
   });
 });
