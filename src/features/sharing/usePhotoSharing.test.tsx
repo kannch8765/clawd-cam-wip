@@ -123,7 +123,10 @@ describe('photo sharing capability detection', () => {
 describe('photo sharing behavior', () => {
   it('calls share once with the prepared File and blocks rapid double clicks', async () => {
     const request = deferred<void>();
-    const shareFile = vi.fn(() => request.promise);
+    const shareFile = vi.fn((file: File) => {
+      void file;
+      return request.promise;
+    });
     const adapter = createAdapter({ shareFile });
     render(<Harness photo={makePhoto()} adapter={adapter} />);
 
