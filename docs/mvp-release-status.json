@@ -3,7 +3,7 @@
   "application": "ClawdCam",
   "version": "0.1.0",
   "releaseStage": "pre-release-mvp",
-  "automatedChecks": "PENDING_GITHUB_CI_NODE_22_24",
+  "automatedChecks": "PASS_GITHUB_CI_NODE_22_24",
   "physicalDeviceValidation": "FAIL",
   "releaseDecision": "BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST",
   "testedDeployment": {
@@ -32,7 +32,12 @@
     "visible focus, contrast, 200 percent zoom, and text enlargement",
     "Service Worker cross-version upgrade"
   ],
-  "ciEvidence": null,
+  "ciEvidence": {
+    "sourceCommit": "9d4807ef86d383e429759dc22c844c6f2154684e",
+    "workflowRunId": 30533031222,
+    "workflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30533031222",
+    "result": "PASS"
+  },
   "task009FeaturesImplemented": false,
   "browserE2E": {
     "introduced": false,

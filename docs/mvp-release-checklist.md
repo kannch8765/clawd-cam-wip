@@ -6,13 +6,13 @@ Release decision: **BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST**
 
 Physical-device validation: **FAIL** for the deployed `33e4e079c6046f9354d29e8a4018c8f9c11f0c1c` IOS-PWA run on 2026-07-30. Source fixes still require redeployment and a new iPhone installed-PWA retest.
 
-Automated validation for this repair branch: **PENDING_GITHUB_CI_NODE_22_24**.
+Automated validation for this repair branch: **PASS_GITHUB_CI_NODE_22_24**.
 
 The long-term release contract below is preserved. Device statuses are grounded in the exact 2026-07-30 run recorded in `docs/mvp-device-validation.md`; source changes do not convert failed device checks to PASS.
 
 ## Repository and CI
 
-- [ ] **PENDING:** the clean source commit must complete Node 22 and Node 24 `npm ci` plus `npm run check` before approval.
+- [x] **PASS:** Node 22 and Node 24 each completed `npm ci` and `npm run check`; see `docs/device-validation-ci-evidence.json`.
 - [x] `package-lock.json` is committed and `npm ci` is the installation contract.
 - [x] CI runs on Node 22 and Node 24.
 - [x] `npm run check` covers ESLint, Prettier, Vitest, TypeScript/Vite build, and PWA artifact validation.
