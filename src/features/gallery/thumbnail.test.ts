@@ -23,13 +23,15 @@ function createAdapter(
   overrides: Partial<ThumbnailAdapter> = {},
 ): ThumbnailAdapter {
   const context = {
+    save: vi.fn(),
+    restore: vi.fn(),
     drawImage: vi.fn(),
+    globalCompositeOperation: 'source-over',
   } as unknown as CanvasRenderingContext2D;
   return {
-    createObjectURL: vi.fn(() => 'blob:thumbnail-source'),
-    revokeObjectURL: vi.fn(),
     decodeImage: vi.fn(async () => ({
       source: {} as CanvasImageSource,
+      release: vi.fn(),
       ...dimensions,
     })),
     createCanvas: vi.fn((width, height) => ({
@@ -67,39 +69,55 @@ describe('thumbnail sizing', () => {
 });
 
 describe('thumbnail generation', () => {
-  it('draws the decoded image and encodes deterministic JPEG settings', async () => {
-    const adapter = createAdapter();
+  it('draws a decoded Blob with a copy composite and encodes a PNG summary', async () => {
+    const release = vi.fn();
+    const adapter = createAdapter(undefined, {
+      decodeImage: vi.fn(async () => ({
+        source: {} as CanvasImageSource,
+        width: 1600,
+        height: 900,
+        release,
+      })),
+    });
     const source = new Blob(['full-size'], { type: 'image/jpeg' });
 
     const thumbnail = await generateThumbnail(source, adapter);
 
     expect(thumbnail.type).toBe(THUMBNAIL_MIME_TYPE);
+    expect(adapter.decodeImage).toHaveBeenCalledWith(source);
     expect(adapter.createCanvas).toHaveBeenCalledWith(320, 180);
     expect(adapter.canvasToBlob).toHaveBeenCalledWith(
       expect.anything(),
       THUMBNAIL_MIME_TYPE,
       THUMBNAIL_QUALITY,
     );
-    expect(adapter.revokeObjectURL).toHaveBeenCalledWith(
-      'blob:thumbnail-source',
-    );
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
-  it('reports decode failure and still revokes the temporary object URL', async () => {
+  it('reports decode failure without modifying the full-size Blob', async () => {
+    const source = new Blob(['original'], { type: 'image/jpeg' });
     const adapter = createAdapter(undefined, {
       decodeImage: vi.fn(async () => {
         throw new Error('decode failed');
       }),
     });
 
-    await expect(
-      generateThumbnail(new Blob(['photo']), adapter),
-    ).rejects.toMatchObject({ code: 'thumbnail-failed' });
-    expect(adapter.revokeObjectURL).toHaveBeenCalledTimes(1);
+    await expect(generateThumbnail(source, adapter)).rejects.toMatchObject({
+      code: 'thumbnail-failed',
+    });
+    expect(source.size).toBe(8);
+    expect(source.type).toBe('image/jpeg');
   });
 
-  it('reports a missing Canvas 2D context', async () => {
+  it('reports a missing Canvas 2D context and releases the decoded source', async () => {
+    const release = vi.fn();
     const adapter = createAdapter(undefined, {
+      decodeImage: vi.fn(async () => ({
+        source: {} as CanvasImageSource,
+        width: 1600,
+        height: 900,
+        release,
+      })),
       createCanvas: vi.fn(() => ({
         canvas: {} as HTMLCanvasElement,
         context: null,
@@ -112,10 +130,18 @@ describe('thumbnail generation', () => {
       code: 'thumbnail-failed',
       message: expect.stringContaining('canvas context'),
     });
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
-  it('reports a null toBlob result', async () => {
+  it('reports an empty toBlob result and releases the decoded source', async () => {
+    const release = vi.fn();
     const adapter = createAdapter(undefined, {
+      decodeImage: vi.fn(async () => ({
+        source: {} as CanvasImageSource,
+        width: 1600,
+        height: 900,
+        release,
+      })),
       canvasToBlob: vi.fn(async () => null),
     });
 
@@ -125,9 +151,10 @@ describe('thumbnail generation', () => {
       code: 'thumbnail-failed',
       message: expect.stringContaining('empty photo thumbnail'),
     });
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
-  it('bounds a permanently pending decode and revokes its URL', async () => {
+  it('bounds a permanently pending decode', async () => {
     vi.useFakeTimers();
     const decode = deferred<never>();
     const adapter = createAdapter(undefined, {
@@ -142,20 +169,23 @@ describe('thumbnail generation', () => {
     try {
       await vi.advanceTimersByTimeAsync(50);
       await rejection;
-      expect(adapter.revokeObjectURL).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('does not modify the original full-size Blob', async () => {
-    const adapter = createAdapter();
-    const source = new Blob(['original'], { type: 'image/png' });
-    const originalSize = source.size;
+  it('rejects an unexpected encoder type instead of persisting a bad summary', async () => {
+    const adapter = createAdapter(undefined, {
+      canvasToBlob: vi.fn(
+        async () => new Blob(['thumbnail'], { type: 'image/jpeg' }),
+      ),
+    });
 
-    await generateThumbnail(source, adapter);
-
-    expect(source.size).toBe(originalSize);
-    expect(source.type).toBe('image/png');
+    await expect(
+      generateThumbnail(new Blob(['photo']), adapter),
+    ).rejects.toMatchObject({
+      code: 'thumbnail-failed',
+      message: expect.stringContaining('PNG thumbnail'),
+    });
   });
 });

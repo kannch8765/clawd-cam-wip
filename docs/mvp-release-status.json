@@ -3,19 +3,39 @@
   "application": "ClawdCam",
   "version": "0.1.0",
   "releaseStage": "pre-release-mvp",
-  "automatedChecks": "PASS",
-  "physicalDeviceValidation": "NOT_RUN",
-  "releaseDecision": "READY_WITH_MANUAL_DEVICE_CHECKS",
-  "knownBlockers": [],
-  "knownCaveats": [
-    "All physical-device validation rows are NOT_RUN.",
-    "The bundled Clawd overlay is reference/test artwork, not final production artwork.",
-    "Browser storage may be evicted and private-browsing behavior varies.",
-    "Camera, installation, Web Share, download destination, and Service Worker upgrade behavior require real-device evidence."
+  "automatedChecks": "PENDING_GITHUB_CI_NODE_22_24",
+  "physicalDeviceValidation": "FAIL",
+  "releaseDecision": "BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST",
+  "testedDeployment": {
+    "url": "https://kannch8765.github.io/clawd-cam-wip/",
+    "commit": "33e4e079c6046f9354d29e8a4018c8f9c11f0c1c",
+    "date": "2026-07-30",
+    "tester": "ゆう",
+    "device": "iPhone 15 Pro",
+    "os": "iOS 26.5.2",
+    "mode": "installed PWA",
+    "result": "FAIL"
+  },
+  "knownBlockers": [
+    "Portrait preview and shutter are not simultaneously visible on the deployed build.",
+    "Persisted iOS PWA Gallery list thumbnails render as black blocks.",
+    "Camera to Gallery navigation leaves the MediaStream active.",
+    "Cancelled iOS camera startup can falsely report ready with a black preview.",
+    "Landscape capture produces portrait JPEG pixel dimensions without EXIF correction."
   ],
+  "retestRequired": true,
+  "notRun": [
+    "IOS-TAB Safari full matrix",
+    "Android tab and installed PWA",
+    "desktop Chromium and Firefox",
+    "keyboard and screen reader accessibility",
+    "visible focus, contrast, 200 percent zoom, and text enlargement",
+    "Service Worker cross-version upgrade"
+  ],
+  "ciEvidence": null,
+  "task009FeaturesImplemented": false,
   "browserE2E": {
     "introduced": false,
     "reason": "Vitest injection boundaries plus static PWA artifact validation cover deterministic contracts without pretending to prove physical browser capabilities."
-  },
-  "task009FeaturesImplemented": false
+  }
 }

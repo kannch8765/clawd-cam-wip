@@ -414,10 +414,23 @@ async function inspectReleasePolicy() {
   assert.equal(status.schemaVersion, 1);
   assert.equal(status.application, 'ClawdCam');
   assert.equal(status.version, packageMetadata.version);
-  assert.equal(status.automatedChecks, 'PASS');
-  assert.equal(status.physicalDeviceValidation, 'NOT_RUN');
-  assert.equal(status.releaseDecision, 'READY_WITH_MANUAL_DEVICE_CHECKS');
-  assert.deepEqual(status.knownBlockers, []);
+  const allowedAutomatedCheckStates = new Set([
+    'PENDING_GITHUB_CI_NODE_22_24',
+    'PASS_GITHUB_CI_NODE_22_24',
+    'FAIL_GITHUB_CI_NODE_22_24',
+  ]);
+  assert.ok(
+    allowedAutomatedCheckStates.has(status.automatedChecks),
+    'Automated check status is not a recognized device-repair state',
+  );
+  assert.equal(status.physicalDeviceValidation, 'FAIL');
+  assert.equal(
+    status.releaseDecision,
+    'BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST',
+  );
+  assert.equal(status.testedDeployment.result, 'FAIL');
+  assert.equal(status.retestRequired, true);
+  assert.equal(status.knownBlockers.length, 5);
   assert.equal(status.browserE2E.introduced, false);
   assert.equal(status.task009FeaturesImplemented, false);
 
@@ -472,8 +485,10 @@ async function inspectReleasePolicy() {
   }
 
   assert.ok(
-    checklist.includes('READY_WITH_MANUAL_DEVICE_CHECKS') &&
-      checklist.includes('Physical-device validation: **NOT_RUN**'),
+    checklist.includes('BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST') &&
+      checklist.includes('Physical-device validation: **FAIL**') &&
+      checklist.includes('redeployment') &&
+      checklist.includes('iPhone retest'),
     'Checklist release status is inconsistent',
   );
   assert.ok(

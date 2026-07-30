@@ -2,12 +2,17 @@
 
 This document defines the release contract for the `0.1.0` pre-release MVP. Automated checks validate source and build artifacts; they do **not** prove real camera hardware, browser permission UI, PWA installation, a platform Share Sheet, download destinations, storage eviction, or operating-system lifecycle behavior.
 
-Release decision: **READY_WITH_MANUAL_DEVICE_CHECKS**
+Release decision: **BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST**
 
-Physical-device validation: **NOT_RUN**. Use `docs/mvp-device-validation.md` before presenting a release as device-validated.
+Physical-device validation: **FAIL** for the deployed `33e4e079c6046f9354d29e8a4018c8f9c11f0c1c` IOS-PWA run on 2026-07-30. Source fixes still require redeployment and a new iPhone installed-PWA retest.
+
+Automated validation for this repair branch: **PENDING_GITHUB_CI_NODE_22_24**.
+
+The long-term release contract below is preserved. Device statuses are grounded in the exact 2026-07-30 run recorded in `docs/mvp-device-validation.md`; source changes do not convert failed device checks to PASS.
 
 ## Repository and CI
 
+- [ ] **PENDING:** the clean source commit must complete Node 22 and Node 24 `npm ci` plus `npm run check` before approval.
 - [x] `package-lock.json` is committed and `npm ci` is the installation contract.
 - [x] CI runs on Node 22 and Node 24.
 - [x] `npm run check` covers ESLint, Prettier, Vitest, TypeScript/Vite build, and PWA artifact validation.
@@ -32,7 +37,7 @@ Physical-device validation: **NOT_RUN**. Use `docs/mvp-device-validation.md` bef
 - [x] Both local `/` and Pages `/<repository>/` builds are artifact-validated.
 - [x] Old Workbox caches are eligible for cleanup through `cleanupOutdatedCaches`.
 - [x] Hashed chunks are precached per build; no custom stale runtime cache is added.
-- [ ] **NOT_RUN:** install from a production Pages URL and reopen in standalone mode.
+- [x] **PASS on deployed base:** install from the production Pages URL and reopen in standalone mode.
 - [ ] **NOT_RUN:** deploy an update over an installed older build and record activation/relaunch behavior.
 
 Update policy: `vite-plugin-pwa` uses `registerType: autoUpdate`; the application registers immediately. A new worker may download and activate without a custom prompt. Application code does not force an immediate page reload. A browser lifecycle change or user reload can still interrupt an in-progress camera/capture/save operation, so deployments must not be described as transaction-preserving across page replacement.
@@ -52,7 +57,7 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Download uses the original full-size Blob and a short-lived object URL.
 - [x] Web Share file capability is checked before showing Share.
 - [x] Unsupported/rejected Web Share leaves Download as the fallback for a valid photo.
-- [ ] **NOT_RUN:** physical camera, switch, mirror, gestures, capture WYSIWYG, retention, delete, download, Share, cancellation, and install/reopen matrix.
+- [ ] **FAIL / PARTIAL:** the 2026-07-30 IOS-PWA run passed camera start/switch/front mirror, gestures, portrait WYSIWYG, Retake, Gallery persistence/delete, Download, Share/cancellation, and install/reopen, but five release blockers remain recorded in `docs/mvp-device-validation.md`. Other environments remain `NOT_RUN`.
 
 ## Failure and recovery
 
@@ -66,7 +71,7 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Download DOM/object-URL failures are contained and clean up their temporary URL.
 - [x] Offline policy keeps the shell/static assets and previously saved IndexedDB gallery readable; Camera is not promised offline.
 - [x] Service Worker precache is versioned by generated revisions and outdated caches are cleaned.
-- [ ] **NOT_RUN:** storage eviction/private mode, real Share Sheet/download failure, offline reopen, and Service Worker upgrade recovery.
+- [ ] **PARTIAL:** offline cold reopen, Download to Files, Share, and Share cancellation passed on IOS-PWA. Storage eviction/private mode, failure destinations, and Service Worker upgrade recovery remain `NOT_RUN`.
 
 ## Accessibility
 
@@ -85,7 +90,7 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Layout removes the 320 px minimum-width trap, wraps long text/actions, and constrains media to the viewport.
 - [x] Safe-area insets, low-height landscape, 200% zoom/narrow layout, and reduced-motion CSS contracts are present.
 - [x] Status is not communicated by color alone and no action depends on hover.
-- [ ] **NOT_RUN:** screen reader, contrast tooling, OS text enlargement, 200% browser zoom, 320 px device, landscape, and installed-PWA safe-area validation.
+- [ ] **FAIL / PARTIAL:** installed-PWA safe-area behavior passed, while portrait shutter reachability and landscape capture/layout failed. Screen reader, contrast tooling, OS text enlargement, 200% zoom, and the 320 px run remain `NOT_RUN`.
 
 ## Privacy and local data
 
@@ -139,9 +144,17 @@ Playwright is **not introduced**. Existing Vitest injection boundaries already e
 
 ## Release decision
 
-**READY_WITH_MANUAL_DEVICE_CHECKS**
+**BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST**
 
-Known blockers: none for publishing an explicitly pre-release MVP candidate.
+Known blockers on deployed commit `33e4e079c6046f9354d29e8a4018c8f9c11f0c1c`:
+
+- portrait preview and shutter were not simultaneously visible;
+- persisted IOS-PWA Gallery thumbnails rendered as black blocks;
+- Camera → Gallery left the MediaStream active;
+- cancelled camera startup could falsely report ready;
+- landscape capture produced portrait JPEG pixel dimensions.
+
+Even after that automated gate passes, release remains blocked until redeployment and a complete iPhone retest.
 
 Non-blocking follow-up:
 

@@ -14,7 +14,7 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
-  it('exposes current-view navigation and moves focus between active headings', async () => {
+  it('exposes current-view navigation, unmounts Camera, and moves focus between active headings', async () => {
     const repository = {
       savePhoto: vi.fn(async () => undefined),
       listPhotos: vi.fn(async () => []),
@@ -30,7 +30,7 @@ describe('App', () => {
     expect(cameraButton).toHaveAttribute('aria-current', 'page');
     expect(cameraButton).toHaveAttribute('aria-controls', 'camera-view');
     expect(galleryButton).not.toHaveAttribute('aria-current');
-    expect(screen.getByTestId('camera-view')).not.toHaveAttribute('hidden');
+    expect(screen.getByTestId('camera-view')).toBeInTheDocument();
 
     fireEvent.click(galleryButton);
 
@@ -41,7 +41,7 @@ describe('App', () => {
     await waitFor(() => expect(galleryHeading).toHaveFocus());
     expect(galleryButton).toHaveAttribute('aria-current', 'page');
     expect(cameraButton).not.toHaveAttribute('aria-current');
-    expect(screen.getByTestId('camera-view')).toHaveAttribute('hidden');
+    expect(screen.queryByTestId('camera-view')).not.toBeInTheDocument();
     expect(screen.getByTestId('gallery-view')).toBeInTheDocument();
 
     fireEvent.click(cameraButton);

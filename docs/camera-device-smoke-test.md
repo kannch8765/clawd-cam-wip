@@ -16,6 +16,10 @@ Test both a normal Safari tab and the installed standalone PWA:
 - backgrounding, locking the phone, or another camera app interrupting the track produces a restartable state;
 - leaving the page releases the camera indicator and all tracks.
 
+## 0.1.0 lifecycle regression retest
+
+On the installed iPhone PWA, cancel the system camera startup surface, mute/interruption paths, and Camera → Gallery navigation separately. Cancellation or a muted/unreadable track must show a recoverable interrupted/error state rather than ready; Gallery must extinguish the camera indicator; returning to Camera must start from Camera off with no stale capture source.
+
 ## Android and Chrome
 
 Test in a normal Chrome tab and, when installable, the standalone PWA:

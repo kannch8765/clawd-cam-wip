@@ -1,63 +1,6 @@
-:root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  color: #29241f;
-  background: #fff8ed;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
+@import './index-base.css';
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  min-width: 0;
-  overflow-x: hidden;
-}
-
-body {
-  min-width: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0;
-  overflow-x: hidden;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-button {
-  min-height: 2.75rem;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.56;
-}
-
-button:focus-visible,
-[role='button']:focus-visible {
-  outline: 3px solid #b9682f;
-  outline-offset: 3px;
-}
-
-h2[tabindex='-1']:focus {
-  outline: none;
-}
-
-.visually-hidden {
+.orientation-status {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -66,368 +9,126 @@ h2[tabindex='-1']:focus {
   white-space: nowrap;
 }
 
-.app-shell {
-  width: min(100%, 58rem);
-  margin: 0 auto;
-  padding: max(1.25rem, env(safe-area-inset-top))
-    max(0.625rem, env(safe-area-inset-right))
-    max(1.5rem, env(safe-area-inset-bottom))
-    max(0.625rem, env(safe-area-inset-left));
-}
-
-.hero {
-  margin-bottom: 1.5rem;
-}
-
-.eyebrow,
-.status-pill {
-  width: fit-content;
-  max-width: 100%;
-  margin: 0;
-  border: 1px solid #d9c8ad;
-  border-radius: 999px;
-  padding: 0.4rem 0.75rem;
-  background: #fffdf8;
-  color: #6f5d47;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0.85rem 0 0;
-  font-size: clamp(3rem, 10vw, 6.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
-  overflow-wrap: anywhere;
-}
-
-.tagline {
-  margin: 1rem 0 0;
-  color: #705f4d;
-  font-size: clamp(1.1rem, 3vw, 1.5rem);
-}
-
-.camera-card {
-  display: grid;
-  min-width: 0;
-  gap: 1rem;
-  border: 1px solid #decfb9;
-  border-radius: 2rem;
-  padding: 0.75rem;
-  background: rgb(255 255 255 / 72%);
-  box-shadow: 0 1.5rem 4rem rgb(75 57 34 / 10%);
-}
-
-.camera-stage {
-  position: relative;
-  min-width: 0;
-  min-height: 24rem;
-  overflow: hidden;
-  border-radius: 1.35rem;
-  background:
-    linear-gradient(135deg, rgb(255 255 255 / 18%), transparent),
-    repeating-linear-gradient(
-      -45deg,
-      #d9d0c3,
-      #d9d0c3 12px,
-      #e8e1d8 12px,
-      #e8e1d8 24px
-    );
-}
-
-.camera-preview,
-.capture-result-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 24rem;
-  object-fit: cover;
-  background: #29241f;
-}
-
-.camera-preview--mirrored {
-  transform: scaleX(-1);
-}
-
-.camera-preview--hidden {
-  display: none;
-}
-
-.capture-result-image {
-  object-fit: contain;
-  object-position: center;
-}
-
-.overlay-interaction-layer {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  overflow: hidden;
-  touch-action: none;
-  overscroll-behavior: contain;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.clawd-overlay {
-  position: absolute;
-  max-width: none;
+.camera-view-boundary[data-geometry-ready='false'] .shutter-action {
   pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-  image-rendering: pixelated;
+  opacity: 0.62;
 }
 
-.camera-stage-message {
-  position: absolute;
-  inset: 0;
+.gallery-thumbnail-error {
   display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 0.9rem;
-  padding: 2rem;
-  color: #4f4539;
-  text-align: center;
-}
-
-.camera-glyph {
-  display: grid;
-  width: 5.5rem;
-  height: 5.5rem;
-  place-items: center;
-  border: 2px solid rgb(255 255 255 / 75%);
-  border-radius: 50%;
-  background: rgb(43 37 30 / 72%);
-  color: white;
-  font-size: 2.4rem;
-}
-
-.capture-progress-overlay {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
-  display: grid;
+  min-height: 9rem;
   place-items: center;
   padding: 1rem;
-  background: rgb(41 36 31 / 58%);
-  color: #fffdf8;
-  font-weight: 750;
-  letter-spacing: 0.02em;
+  background: #f4e7d6;
+  color: #624a34;
   text-align: center;
 }
 
-.camera-copy {
-  min-width: 0;
-  padding: 0.75rem 0.5rem 1rem;
-  overflow-wrap: anywhere;
-}
-
-.camera-copy h2 {
-  margin: 1rem 0 0.7rem;
-  font-size: 2rem;
-  letter-spacing: -0.035em;
-}
-
-.camera-copy > p:not(.status-pill),
-.capture-result-copy > p:not(.status-pill) {
-  color: #6c5e4f;
-  line-height: 1.65;
-}
-
-.primary-action,
-.secondary-action,
-.shutter-action {
-  width: 100%;
-  min-height: 2.75rem;
-  margin-top: 1rem;
-  border-radius: 999px;
-  padding: 0.85rem 1.1rem;
-  font-weight: 750;
-  overflow-wrap: anywhere;
-}
-
-.primary-action {
-  border: 1px solid #29241f;
-  background: #29241f;
-  color: #fffdf8;
-}
-
-.secondary-action {
-  border: 1px solid #a68e70;
-  background: #fffdf8;
-  color: #43392f;
-}
-
-.shutter-action {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.75rem;
-  border: 1px solid #29241f;
-  background: #fffdf8;
-  color: #29241f;
-  text-align: left;
-}
-
-.shutter-action > span {
-  display: block;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 0.28rem solid #fffdf8;
-  border-radius: 50%;
-  background: #29241f;
-  box-shadow: 0 0 0 2px #29241f;
-}
-
-.camera-progress,
-.camera-details,
-.capture-setup {
-  margin: 1rem 0 0;
-  font-size: 0.9rem;
-}
-
-.overlay-controls {
-  margin-top: 1rem;
-  border-top: 1px solid #e4d7c5;
-  padding-top: 1rem;
-}
-
-.overlay-selection {
-  display: grid;
-  gap: 0.2rem;
-  margin: 0;
-}
-
-.overlay-selection span {
-  color: #6d5d4a;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.overlay-selection strong {
-  color: #352d25;
-}
-
-.reference-asset-notice {
-  margin: 0.5rem 0 0;
-  color: #5f4e3d;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.overlay-reset {
-  margin-top: 0.75rem;
-}
-
-.capture-error {
-  margin-top: 1rem;
-  border: 1px solid #c98c5d;
-  border-radius: 1rem;
-  padding: 0.9rem;
-  background: #fff6ee;
-}
-
-.capture-error p {
-  margin: 0.35rem 0 0;
-  color: #674530;
-  line-height: 1.5;
-}
-
-.capture-metadata {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin: 1rem 0 0;
-}
-
-.capture-metadata div {
-  min-width: 0;
-  border: 1px solid #e1d3bf;
-  border-radius: 1rem;
-  padding: 0.75rem;
-  background: #fffdf8;
-}
-
-.capture-metadata dt {
-  color: #6d5d4a;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.capture-metadata dd {
-  overflow-wrap: anywhere;
-  margin: 0.3rem 0 0;
-  color: #352d25;
-  font-weight: 700;
-}
-
-@media (max-width: 420px) {
-  .capture-metadata {
-    grid-template-columns: 1fr;
+@media (max-width: 720px) {
+  .app-shell {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
   }
 
-  .camera-stage,
+  .hero {
+    margin-bottom: 0.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.35rem, 12vw, 3.5rem);
+  }
+
+  .camera-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'stage' 'copy';
+    gap: 0.5rem;
+  }
+
+  .camera-stage {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    aspect-ratio: 3 / 4;
+  }
+
   .camera-preview,
   .capture-result-image {
-    min-height: 20rem;
+    min-height: 0;
+  }
+
+  .camera-copy {
+    display: contents;
+  }
+
+  .camera-copy .shutter-action {
+    position: sticky;
+    z-index: 4;
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    width: calc(100% - 1rem);
+    margin: 0.5rem;
+    border: 1px solid #29241f;
+    background: rgb(255 253 248 / 94%);
+    box-shadow: 0 0.75rem 2rem rgb(75 57 34 / 22%);
+    backdrop-filter: blur(12px);
   }
 }
 
 @media (min-width: 721px) {
+  .camera-card {
+    grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
+  }
+}
+
+/* Installed phones can exceed 720 CSS px in landscape. Use the input and
+   low-height signals instead of routing those devices into the desktop layout. */
+@media (orientation: landscape) and (max-height: 720px) and (pointer: coarse) {
   .app-shell {
-    padding: max(4rem, env(safe-area-inset-top))
-      max(1rem, env(safe-area-inset-right))
-      max(4rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
+    padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 
   .hero {
-    margin-bottom: 2rem;
+    margin-bottom: 0.35rem;
   }
 
   .camera-card {
-    grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.85fr);
-    gap: 1.5rem;
-    padding: 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'stage' 'copy';
+    gap: 0.35rem;
+  }
+
+  .camera-stage {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 3.5rem);
+  }
+
+  .camera-preview,
+  .capture-result-image {
+    min-height: 0;
   }
 
   .camera-copy {
+    display: contents;
+  }
+
+  .camera-copy .shutter-action {
+    position: sticky;
+    z-index: 4;
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    grid-column: 1;
+    grid-row: 1;
     align-self: end;
-    padding: 1rem 1rem 1.25rem 0;
-  }
-}
-
-@media (max-height: 560px) and (orientation: landscape) {
-  .app-shell {
-    padding-top: max(0.75rem, env(safe-area-inset-top));
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-
-  .hero {
-    margin-bottom: 0.75rem;
-  }
-
-  .camera-stage,
-  .camera-preview,
-  .capture-result-image {
-    min-height: 14rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    width: calc(100% - 1rem);
+    margin: 0.5rem;
+    border: 1px solid #29241f;
+    background: rgb(255 253 248 / 94%);
+    box-shadow: 0 0.75rem 2rem rgb(75 57 34 / 22%);
+    backdrop-filter: blur(12px);
   }
 }

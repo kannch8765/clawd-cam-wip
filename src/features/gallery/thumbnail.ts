@@ -1,14 +1,15 @@
 import { GalleryStorageError } from './galleryTypes';
 
 export const THUMBNAIL_MAX_EDGE = 320;
-export const THUMBNAIL_MIME_TYPE = 'image/jpeg';
-export const THUMBNAIL_QUALITY = 0.82;
+export const THUMBNAIL_MIME_TYPE = 'image/png';
+export const THUMBNAIL_QUALITY = 1;
 export const THUMBNAIL_DEADLINE_MS = 5_000;
 
 export interface DecodedThumbnailImage {
   source: CanvasImageSource;
   width: number;
   height: number;
+  release(): void;
 }
 
 export interface ThumbnailCanvasSurface {
@@ -17,9 +18,7 @@ export interface ThumbnailCanvasSurface {
 }
 
 export interface ThumbnailAdapter {
-  createObjectURL(blob: Blob): string;
-  revokeObjectURL(url: string): void;
-  decodeImage(url: string): Promise<DecodedThumbnailImage>;
+  decodeImage(blob: Blob): Promise<DecodedThumbnailImage>;
   createCanvas(width: number, height: number): ThumbnailCanvasSurface;
   canvasToBlob(
     canvas: HTMLCanvasElement,
@@ -32,11 +31,25 @@ function thumbnailError(message: string, cause?: unknown): GalleryStorageError {
   return new GalleryStorageError('thumbnail-failed', message, cause);
 }
 
-function decodeBrowserImage(url: string): Promise<DecodedThumbnailImage> {
+function decodeHtmlImage(blob: Blob): Promise<DecodedThumbnailImage> {
   return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(blob);
     const image = new Image();
+    let settled = false;
+
+    const release = () => {
+      image.onload = null;
+      image.onerror = null;
+      URL.revokeObjectURL(objectUrl);
+    };
+
     image.onload = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+        release();
         reject(thumbnailError('The captured image has invalid dimensions.'));
         return;
       }
@@ -44,20 +57,52 @@ function decodeBrowserImage(url: string): Promise<DecodedThumbnailImage> {
         source: image,
         width: image.naturalWidth,
         height: image.naturalHeight,
+        release,
       });
     };
     image.onerror = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      release();
       reject(thumbnailError('ClawdCam could not decode the captured photo.'));
     };
-    image.src = url;
+    image.src = objectUrl;
 
     if (typeof image.decode === 'function') {
       void image.decode().catch(() => {
-        // `onerror` provides the normalized failure and older browsers may
-        // reject decode() before dispatching the load event.
+        // The load/error events remain the normalized completion boundary.
       });
     }
   });
+}
+
+async function decodeBrowserImage(blob: Blob): Promise<DecodedThumbnailImage> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(blob);
+      if (bitmap.width <= 0 || bitmap.height <= 0) {
+        bitmap.close();
+        throw thumbnailError('The captured image has invalid dimensions.');
+      }
+
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        release: () => bitmap.close(),
+      };
+    } catch (error) {
+      if (error instanceof GalleryStorageError) {
+        throw error;
+      }
+      // Some WebKit versions expose createImageBitmap but reject particular
+      // Blob codecs. The HTMLImageElement path is the compatibility fallback.
+    }
+  }
+
+  return decodeHtmlImage(blob);
 }
 
 function browserCanvasToBlob(
@@ -75,14 +120,18 @@ function browserCanvasToBlob(
 }
 
 export const browserThumbnailAdapter: ThumbnailAdapter = {
-  createObjectURL: (blob) => URL.createObjectURL(blob),
-  revokeObjectURL: (url) => URL.revokeObjectURL(url),
   decodeImage: decodeBrowserImage,
   createCanvas(width, height) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
-    return { canvas, context: canvas.getContext('2d') };
+    return {
+      canvas,
+      context: canvas.getContext('2d', {
+        alpha: false,
+        willReadFrequently: false,
+      }),
+    };
   },
   canvasToBlob: browserCanvasToBlob,
 };
@@ -145,32 +194,22 @@ export async function generateThumbnail(
     throw thumbnailError('The captured photo Blob is empty or unavailable.');
   }
 
-  let objectUrl: string;
-  try {
-    objectUrl = adapter.createObjectURL(photoBlob);
-  } catch (error) {
-    throw thumbnailError(
-      'ClawdCam could not create a temporary thumbnail resource.',
-      error,
-    );
-  }
-
-  try {
-    return await withDeadline(
-      (async () => {
-        let decoded: DecodedThumbnailImage;
-        try {
-          decoded = await adapter.decodeImage(objectUrl);
-        } catch (error) {
-          if (error instanceof GalleryStorageError) {
-            throw error;
-          }
-          throw thumbnailError(
-            'ClawdCam could not decode the captured photo.',
-            error,
-          );
+  return withDeadline(
+    (async () => {
+      let decoded: DecodedThumbnailImage;
+      try {
+        decoded = await adapter.decodeImage(photoBlob);
+      } catch (error) {
+        if (error instanceof GalleryStorageError) {
+          throw error;
         }
+        throw thumbnailError(
+          'ClawdCam could not decode the captured photo.',
+          error,
+        );
+      }
 
+      try {
         const size = calculateThumbnailSize(decoded.width, decoded.height);
         const surface = adapter.createCanvas(size.width, size.height);
         if (!surface.context) {
@@ -179,13 +218,19 @@ export async function generateThumbnail(
           );
         }
 
-        surface.context.drawImage(
-          decoded.source,
-          0,
-          0,
-          size.width,
-          size.height,
-        );
+        surface.context.save();
+        try {
+          surface.context.globalCompositeOperation = 'copy';
+          surface.context.drawImage(
+            decoded.source,
+            0,
+            0,
+            size.width,
+            size.height,
+          );
+        } finally {
+          surface.context.restore();
+        }
 
         let thumbnail: Blob | null;
         try {
@@ -201,29 +246,21 @@ export async function generateThumbnail(
           );
         }
 
-        if (!thumbnail) {
+        if (!thumbnail || thumbnail.size === 0) {
           throw thumbnailError(
             'The browser returned an empty photo thumbnail.',
           );
         }
         if (thumbnail.type && thumbnail.type !== THUMBNAIL_MIME_TYPE) {
           throw thumbnailError(
-            'The browser did not encode the requested JPEG thumbnail.',
+            'The browser did not encode the requested PNG thumbnail.',
           );
         }
         return thumbnail;
-      })(),
-      deadlineMs,
-    );
-  } catch (error) {
-    if (error instanceof GalleryStorageError) {
-      throw error;
-    }
-    throw thumbnailError(
-      'ClawdCam could not generate the photo thumbnail.',
-      error,
-    );
-  } finally {
-    adapter.revokeObjectURL(objectUrl);
-  }
+      } finally {
+        decoded.release();
+      }
+    })(),
+    deadlineMs,
+  );
 }

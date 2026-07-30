@@ -60,6 +60,25 @@ function expectTransformCloseTo(
   expect(actual.rotation).toBeCloseTo(expected.rotation, 8);
 }
 
+function installPointerCaptureHarness(target: HTMLElement): void {
+  const capturedPointers = new Set<number>();
+
+  Object.defineProperties(target, {
+    setPointerCapture: {
+      configurable: true,
+      value: vi.fn((pointerId: number) => capturedPointers.add(pointerId)),
+    },
+    releasePointerCapture: {
+      configurable: true,
+      value: vi.fn((pointerId: number) => capturedPointers.delete(pointerId)),
+    },
+    hasPointerCapture: {
+      configurable: true,
+      value: vi.fn((pointerId: number) => capturedPointers.has(pointerId)),
+    },
+  });
+}
+
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
 });
@@ -70,6 +89,11 @@ afterEach(() => {
 
 describe('pinch and drag coordination', () => {
   it('suppresses the original drag until it fully ends after a two-pointer pinch', async () => {
+    const addEventListenerSpy = vi.spyOn(
+      EventTarget.prototype,
+      'addEventListener',
+    );
+
     render(<CameraView adapter={createAdapter()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Start camera' }));
     await screen.findByText('Rear camera ready');
@@ -86,8 +110,19 @@ describe('pinch and drag coordination', () => {
       left: 0,
       toJSON: () => ({}),
     });
+    installPointerCaptureHarness(layer);
+
+    await waitFor(() => {
+      const pointerDownListenerInstalled = addEventListenerSpy.mock.calls.some(
+        (call, index) =>
+          addEventListenerSpy.mock.contexts[index] === layer &&
+          call[0] === 'pointerdown',
+      );
+      expect(pointerDownListenerInstalled).toBe(true);
+    });
 
     const overlay = screen.getByAltText('Reference Clawd');
+    const initialTransform = readTransform(overlay);
 
     await act(async () => {
       fireEvent.pointerDown(layer, {
@@ -98,6 +133,9 @@ describe('pinch and drag coordination', () => {
         clientX: 90,
         clientY: 200,
       });
+    });
+
+    await act(async () => {
       fireEvent.pointerMove(layer, {
         pointerId: 1,
         pointerType: 'touch',
@@ -106,6 +144,13 @@ describe('pinch and drag coordination', () => {
         clientX: 105,
         clientY: 200,
       });
+    });
+
+    await waitFor(() => {
+      expect(readTransform(overlay).x).toBeGreaterThan(initialTransform.x);
+    });
+
+    await act(async () => {
       fireEvent.pointerDown(layer, {
         pointerId: 2,
         pointerType: 'touch',
@@ -114,6 +159,9 @@ describe('pinch and drag coordination', () => {
         clientX: 210,
         clientY: 200,
       });
+    });
+
+    await act(async () => {
       fireEvent.pointerMove(layer, {
         pointerId: 1,
         pointerType: 'touch',
@@ -122,6 +170,9 @@ describe('pinch and drag coordination', () => {
         clientX: 90,
         clientY: 180,
       });
+    });
+
+    await act(async () => {
       fireEvent.pointerMove(layer, {
         pointerId: 2,
         pointerType: 'touch',
