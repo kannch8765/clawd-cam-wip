@@ -31,6 +31,10 @@ Repeat the Safari-tab checks in the installed standalone PWA. Also background an
 
 When installable, repeat the Chrome-tab checks in standalone mode. Background/restore the PWA, rotate the device, and capture after a long camera session.
 
+## 0.1.0 orientation regression retest
+
+After deploying `fix/0.1.0-device-validation`, repeat portrait → landscape → portrait captures on the installed iPhone PWA. Wait until the shutter is enabled after each rotation, confirm landscape JPEG pixels satisfy `width > height`, confirm the returned portrait JPEG satisfies `height > width`, and verify the normalized Clawd transform remains visually unchanged. The 2026-07-30 deployed-base run failed this check and must not be treated as passing from automated tests alone.
+
 ## Result quality and memory
 
 - inspect output dimensions and verify the long edge follows the 960–2048 pixel policy without using device pixel ratio;

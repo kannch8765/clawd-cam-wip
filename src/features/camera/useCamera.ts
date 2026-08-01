@@ -1,305 +1,186 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { mapCameraError } from './cameraAdapter';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CameraError,
   type CameraAdapter,
   type CameraCaptureSource,
-  type CameraFacingMode,
-  type CameraState,
 } from './cameraTypes';
+import {
+  CAMERA_STARTUP_TIMEOUT_MS,
+  useCamera as useBaseCamera,
+} from './useCameraBase';
 
-export const CAMERA_STARTUP_TIMEOUT_MS = 20_000;
+export { CAMERA_STARTUP_TIMEOUT_MS };
+export const MUTE_RECOVERY_GRACE_MS = 3_000;
 
-const initialState: CameraState = {
-  status: 'idle',
-  facingMode: 'environment',
-};
-
-function errorState(
-  error: CameraError,
-  facingMode: CameraFacingMode,
-): CameraState {
-  switch (error.code) {
-    case 'permission-denied':
-      return { status: 'permission-denied', facingMode, error };
-    case 'unsupported':
-      return { status: 'unsupported', facingMode, error };
-    case 'unavailable':
-    case 'constraints':
-      return { status: 'unavailable', facingMode, error };
-    case 'interrupted':
-      return { status: 'interrupted', facingMode, error };
-    case 'runtime-error':
-      return { status: 'runtime-error', facingMode, error };
-  }
-}
-
-function tracksAreActive(stream: MediaStream): boolean {
+function streamIsUsable(stream: MediaStream): boolean {
   const tracks = stream.getTracks();
   return (
     tracks.length > 0 &&
     tracks.every(
-      (track) => track.readyState === undefined || track.readyState !== 'ended',
+      (track) =>
+        track.readyState !== 'ended' &&
+        track.enabled !== false &&
+        track.muted !== true,
     )
   );
 }
 
+function interruptStream(stream: MediaStream): void {
+  for (const track of stream.getTracks()) {
+    track.dispatchEvent(new Event('ended'));
+  }
+}
+
 export function useCamera(adapter: CameraAdapter) {
-  const [state, setState] = useState<CameraState>(initialState);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const captureSourceRef = useRef<CameraCaptureSource | null>(null);
-  const requestIdRef = useRef(0);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const removeTrackListenersRef = useRef<(() => void) | null>(null);
-  const mountedRef = useRef(false);
-  const releasedStreamsRef = useRef(new WeakSet<MediaStream>());
-
-  const stopStreamOnce = useCallback(
-    (stream: MediaStream) => {
-      if (releasedStreamsRef.current.has(stream)) {
-        return;
-      }
-
-      releasedStreamsRef.current.add(stream);
-      adapter.stopStream(stream);
-    },
-    [adapter],
-  );
-
-  const releaseCurrentStream = useCallback(() => {
-    removeTrackListenersRef.current?.();
-    removeTrackListenersRef.current = null;
-    captureSourceRef.current = null;
-
-    const stream = streamRef.current;
-    streamRef.current = null;
-
-    if (videoRef.current?.srcObject === stream) {
-      videoRef.current.srcObject = null;
-    }
-
-    if (stream) {
-      stopStreamOnce(stream);
-    }
-  }, [stopStreamOnce]);
-
-  const cancelCurrentRequest = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    releaseCurrentStream();
-  }, [releaseCurrentStream]);
-
-  const startCamera = useCallback(
-    async (facingMode: CameraFacingMode) => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-      cancelCurrentRequest();
-
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-      setState({ status: 'requesting', facingMode });
-
-      let requestedStream: MediaStream | null = null;
-      const timeoutError = new CameraError(
-        'runtime-error',
-        'Camera startup timed out. Please try again.',
-      );
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-      const startup = async () => {
+  const stoppedStreamsRef = useRef(new WeakSet<MediaStream>());
+  const [trackInterrupted, setTrackInterrupted] = useState(false);
+  const wrappedAdapter = useMemo<CameraAdapter>(
+    () => ({
+      ...adapter,
+      async requestStream(facingMode) {
         const stream = await adapter.requestStream(facingMode);
-        requestedStream = stream;
-
-        if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(stream);
-          return;
-        }
-
-        streamRef.current = stream;
-
-        const handleTrackEnded = () => {
-          if (
-            !mountedRef.current ||
-            requestIdRef.current !== requestId ||
-            streamRef.current !== stream
-          ) {
-            return;
+        if (!streamIsUsable(stream)) {
+          if (!stoppedStreamsRef.current.has(stream)) {
+            stoppedStreamsRef.current.add(stream);
+            adapter.stopStream(stream);
           }
-
-          requestIdRef.current += 1;
-          abortControllerRef.current?.abort();
-          abortControllerRef.current = null;
-          releaseCurrentStream();
-          setState({
-            status: 'interrupted',
-            facingMode,
-            error: new CameraError(
-              'interrupted',
-              'The active camera stream ended unexpectedly.',
-            ),
-          });
-        };
-
-        const tracks = stream.getTracks();
-        for (const track of tracks) {
-          track.addEventListener('ended', handleTrackEnded);
-        }
-        removeTrackListenersRef.current = () => {
-          for (const track of tracks) {
-            track.removeEventListener('ended', handleTrackEnded);
-          }
-        };
-
-        const devices = await adapter.enumerateVideoInputs();
-
-        if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(stream);
-          return;
-        }
-
-        if (devices.length === 0) {
-          throw new CameraError('unavailable', 'No video input is available.');
-        }
-
-        const video = videoRef.current;
-
-        if (!video) {
           throw new CameraError(
-            'runtime-error',
-            'The camera preview is not available.',
+            'interrupted',
+            'The camera did not provide a usable video track. Please try again.',
           );
         }
-
-        video.srcObject = stream;
-        try {
-          void video.play().catch(() => undefined);
-        } catch {
-          // Metadata events can still establish readiness when play() is unavailable.
+        return stream;
+      },
+      async waitForVideoReady(video, signal) {
+        const dimensions = await adapter.waitForVideoReady(video, signal);
+        const stream = video.srcObject as MediaStream | null;
+        if (
+          !stream ||
+          typeof stream.getTracks !== 'function' ||
+          !streamIsUsable(stream)
+        ) {
+          throw new CameraError(
+            'interrupted',
+            'The camera stopped before a usable preview became available.',
+          );
         }
-
-        const dimensions = await adapter.waitForVideoReady(
-          video,
-          abortController.signal,
-        );
-
-        if (!mountedRef.current || requestIdRef.current !== requestId) {
-          stopStreamOnce(stream);
+        return dimensions;
+      },
+      stopStream(stream) {
+        if (stoppedStreamsRef.current.has(stream)) {
           return;
         }
-
-        abortControllerRef.current = null;
-        captureSourceRef.current = {
-          requestId,
-          stream,
-          video,
-          facingMode,
-          dimensions: { ...dimensions },
-        };
-        setState({
-          status: 'ready',
-          facingMode,
-          deviceCount: devices.length,
-          dimensions,
-        });
-      };
-
-      try {
-        await Promise.race([
-          startup(),
-          new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(
-              () => reject(timeoutError),
-              CAMERA_STARTUP_TIMEOUT_MS,
-            );
-          }),
-        ]);
-      } catch (error) {
-        if (error === timeoutError) {
-          if (!mountedRef.current || requestIdRef.current !== requestId) {
-            return;
-          }
-
-          requestIdRef.current += 1;
-          abortControllerRef.current?.abort();
-          abortControllerRef.current = null;
-          releaseCurrentStream();
-          setState(errorState(timeoutError, facingMode));
-          return;
-        }
-
-        if (!mountedRef.current || requestIdRef.current !== requestId) {
-          if (requestedStream) {
-            stopStreamOnce(requestedStream);
-          }
-          return;
-        }
-
-        abortControllerRef.current = null;
-        releaseCurrentStream();
-        setState(errorState(mapCameraError(error), facingMode));
-      } finally {
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId);
-        }
-      }
-    },
-    [adapter, cancelCurrentRequest, releaseCurrentStream, stopStreamOnce],
+        stoppedStreamsRef.current.add(stream);
+        adapter.stopStream(stream);
+      },
+    }),
+    [adapter],
   );
+  const camera = useBaseCamera(wrappedAdapter);
+  const {
+    state,
+    getCameraCaptureSource: getBaseCameraCaptureSource,
+    isCameraCaptureSourceCurrent: isBaseCameraCaptureSourceCurrent,
+  } = camera;
 
-  const retry = useCallback(() => {
-    void startCamera(state.facingMode);
-  }, [startCamera, state.facingMode]);
+  useLayoutEffect(() => {
+    if (state.status !== 'ready') {
+      return;
+    }
 
-  const switchCamera = useCallback(() => {
-    const facingMode = state.facingMode === 'user' ? 'environment' : 'user';
-    void startCamera(facingMode);
-  }, [startCamera, state.facingMode]);
-
-  const getCameraCaptureSource = useCallback((): CameraCaptureSource | null => {
-    const source = captureSourceRef.current;
+    const source = getBaseCameraCaptureSource();
     if (!source) {
-      return null;
+      return;
     }
 
-    if (
-      requestIdRef.current !== source.requestId ||
-      streamRef.current !== source.stream ||
-      videoRef.current !== source.video ||
-      source.video.srcObject !== source.stream ||
-      source.video.videoWidth <= 0 ||
-      source.video.videoHeight <= 0 ||
-      !tracksAreActive(source.stream)
-    ) {
-      return null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const cancelTimer = () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+    const scheduleVisibleInterruption = () => {
+      if (
+        timer !== null ||
+        document.visibilityState !== 'visible' ||
+        streamIsUsable(source.stream)
+      ) {
+        return;
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        if (
+          document.visibilityState === 'visible' &&
+          !streamIsUsable(source.stream)
+        ) {
+          interruptStream(source.stream);
+        }
+      }, MUTE_RECOVERY_GRACE_MS);
+    };
+    const reconcileTrackState = () => {
+      if (
+        document.visibilityState !== 'visible' ||
+        streamIsUsable(source.stream)
+      ) {
+        cancelTimer();
+        setTrackInterrupted(false);
+        return;
+      }
+      setTrackInterrupted(true);
+      scheduleVisibleInterruption();
+    };
+
+    const tracks = source.stream.getTracks();
+    for (const track of tracks) {
+      track.addEventListener('mute', reconcileTrackState);
+      track.addEventListener('unmute', reconcileTrackState);
     }
+    document.addEventListener('visibilitychange', reconcileTrackState);
 
-    return source;
-  }, []);
-
-  const isCameraCaptureSourceCurrent = useCallback(
-    (source: CameraCaptureSource): boolean => {
-      return getCameraCaptureSource() === source;
-    },
-    [getCameraCaptureSource],
-  );
-
-  useEffect(() => {
-    mountedRef.current = true;
+    // Reconcile after listener installation so a mute that happened between the
+    // base ready transition and this layout effect cannot leave a false-ready UI.
+    reconcileTrackState();
 
     return () => {
-      mountedRef.current = false;
-      requestIdRef.current += 1;
-      cancelCurrentRequest();
+      cancelTimer();
+      for (const track of tracks) {
+        track.removeEventListener('mute', reconcileTrackState);
+        track.removeEventListener('unmute', reconcileTrackState);
+      }
+      document.removeEventListener('visibilitychange', reconcileTrackState);
+      if (source.video.srcObject === source.stream) {
+        source.video.srcObject = null;
+      }
     };
-  }, [cancelCurrentRequest]);
+  }, [state.status, getBaseCameraCaptureSource]);
+
+  const getCameraCaptureSource = useCallback(() => {
+    const source = getBaseCameraCaptureSource();
+    return source && streamIsUsable(source.stream) ? source : null;
+  }, [getBaseCameraCaptureSource]);
+
+  const isCameraCaptureSourceCurrent = useCallback(
+    (source: CameraCaptureSource) =>
+      streamIsUsable(source.stream) && isBaseCameraCaptureSourceCurrent(source),
+    [isBaseCameraCaptureSourceCurrent],
+  );
+
+  const exposedState =
+    trackInterrupted && state.status === 'ready'
+      ? {
+          status: 'interrupted' as const,
+          facingMode: state.facingMode,
+          error: new CameraError(
+            'interrupted',
+            'The camera is temporarily unavailable. Wait for it to resume or restart it.',
+          ),
+        }
+      : state;
 
   return {
-    state,
-    videoRef,
-    startCamera,
-    retry,
-    switchCamera,
+    ...camera,
+    state: exposedState,
     getCameraCaptureSource,
     isCameraCaptureSourceCurrent,
   };

@@ -3,19 +3,61 @@
   "application": "ClawdCam",
   "version": "0.1.0",
   "releaseStage": "pre-release-mvp",
-  "automatedChecks": "PASS",
-  "physicalDeviceValidation": "NOT_RUN",
+  "automatedChecks": "PASS_GITHUB_CI_NODE_22_24",
+  "physicalDeviceValidation": "PASS_WITH_NOTES",
   "releaseDecision": "READY_WITH_MANUAL_DEVICE_CHECKS",
+  "testedDeployment": {
+    "url": "https://kannch8765.github.io/clawd-cam-wip/",
+    "commit": "c684843e619f493d676992ab29eaec13f6b5d13e",
+    "sourceCommit": "9d4807ef86d383e429759dc22c844c6f2154684e",
+    "pagesWorkflowRunId": 30536547832,
+    "pagesWorkflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30536547832",
+    "date": "2026-08-01",
+    "tester": "ゆう",
+    "device": "iPhone 15 Pro",
+    "os": "iOS 26.5.2",
+    "mode": "installed PWA",
+    "result": "PASS_WITH_NOTES"
+  },
   "knownBlockers": [],
-  "knownCaveats": [
-    "All physical-device validation rows are NOT_RUN.",
-    "The bundled Clawd overlay is reference/test artwork, not final production artwork.",
-    "Browser storage may be evicted and private-browsing behavior varies.",
-    "Camera, installation, Web Share, download destination, and Service Worker upgrade behavior require real-device evidence."
+  "closedReleaseBlockers": [
+    "Portrait live composition and the Take photo action are simultaneously visible and usable.",
+    "Persisted iOS PWA Gallery list thumbnails render normally instead of as black blocks.",
+    "Camera to Gallery navigation releases the MediaStream and clears the iOS camera-use indicator.",
+    "Permission denial reports Permission denied without a Clawd overlay or false ready state, and retry recovers after permission is restored.",
+    "Landscape capture produces landscape JPEG pixel dimensions without EXIF Orientation correction."
   ],
+  "nonBlockingNotes": [
+    "In low-height landscape, the reachable sticky Take photo action overlays a large portion of the live composition. The control does not enter the captured image; separately scoped mobile camera UI/UX research and polish remain recommended."
+  ],
+  "retestRequired": false,
+  "notRun": [
+    "IOS-TAB Safari full matrix",
+    "Android tab and installed PWA",
+    "desktop Chromium and Firefox",
+    "keyboard and screen reader accessibility",
+    "visible focus, contrast, 200 percent zoom, and text enlargement",
+    "Service Worker cross-version upgrade"
+  ],
+  "ciEvidence": {
+    "sourceCommit": "9d4807ef86d383e429759dc22c844c6f2154684e",
+    "workflowRunId": 30533031222,
+    "workflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30533031222",
+    "result": "PASS"
+  },
+  "deviceEvidence": {
+    "path": "docs/device-validation-ios-pwa-evidence.json",
+    "result": "PASS_WITH_NOTES",
+    "releaseBlockingRegressionTotals": {
+      "expected": 5,
+      "passed": 5,
+      "failed": 0,
+      "blocked": 0
+    }
+  },
+  "task009FeaturesImplemented": false,
   "browserE2E": {
     "introduced": false,
     "reason": "Vitest injection boundaries plus static PWA artifact validation cover deterministic contracts without pretending to prove physical browser capabilities."
-  },
-  "task009FeaturesImplemented": false
+  }
 }

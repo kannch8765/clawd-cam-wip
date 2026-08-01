@@ -165,7 +165,9 @@ describe('CameraView capture integration', () => {
       await assetDecode.promise;
     });
 
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled(),
+    );
   });
 
   it('captures through CameraView, the hook, and the composition adapter', async () => {

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "9d4807ef86d383e429759dc22c844c6f2154684e",
+  "fixedBase": "33e4e079c6046f9354d29e8a4018c8f9c11f0c1c",
+  "workflowRunId": 30533031222,
+  "workflowRunAttempt": 1,
+  "workflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30533031222",
+  "node22": {
+    "result": "success",
+    "commands": ["npm ci", "npm run check"]
+  },
+  "node24": {
+    "result": "success",
+    "commands": ["npm ci", "npm run check"]
+  },
+  "result": "PASS",
+  "recordedAt": "2026-07-30T10:03:10+00:00"
+}

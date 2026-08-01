@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CameraView } from '../features/camera/CameraView';
+import type { CameraAdapter } from '../features/camera/cameraTypes';
 import { GalleryServicesProvider } from '../features/gallery/GalleryRepositoryContext';
 import type { GalleryServices } from '../features/gallery/galleryServices';
 import { GalleryView } from '../features/gallery/GalleryView';
@@ -7,9 +8,10 @@ import { createGalleryRepository } from '../features/gallery/galleryRepository';
 
 interface AppProps {
   galleryServices?: Partial<GalleryServices>;
+  cameraAdapter?: CameraAdapter;
 }
 
-export function App({ galleryServices }: AppProps) {
+export function App({ galleryServices, cameraAdapter }: AppProps) {
   const [activeView, setActiveView] = useState<'camera' | 'gallery'>('camera');
   const cameraHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const galleryHeadingRef = useRef<HTMLHeadingElement | null>(null);
@@ -58,13 +60,11 @@ export function App({ galleryServices }: AppProps) {
           </nav>
         </header>
 
-        <div
-          id="camera-view"
-          data-testid="camera-view"
-          hidden={activeView !== 'camera'}
-        >
-          <CameraView headingRef={cameraHeadingRef} />
-        </div>
+        {activeView === 'camera' && (
+          <div id="camera-view" data-testid="camera-view">
+            <CameraView adapter={cameraAdapter} headingRef={cameraHeadingRef} />
+          </div>
+        )}
         {activeView === 'gallery' && (
           <div id="gallery-view" data-testid="gallery-view">
             <GalleryView
