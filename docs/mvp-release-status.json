@@ -4,26 +4,33 @@
   "version": "0.1.0",
   "releaseStage": "pre-release-mvp",
   "automatedChecks": "PASS_GITHUB_CI_NODE_22_24",
-  "physicalDeviceValidation": "FAIL",
-  "releaseDecision": "BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST",
+  "physicalDeviceValidation": "PASS_WITH_NOTES",
+  "releaseDecision": "READY_WITH_MANUAL_DEVICE_CHECKS",
   "testedDeployment": {
     "url": "https://kannch8765.github.io/clawd-cam-wip/",
-    "commit": "33e4e079c6046f9354d29e8a4018c8f9c11f0c1c",
-    "date": "2026-07-30",
+    "commit": "c684843e619f493d676992ab29eaec13f6b5d13e",
+    "sourceCommit": "9d4807ef86d383e429759dc22c844c6f2154684e",
+    "pagesWorkflowRunId": 30535998703,
+    "pagesWorkflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30535998703",
+    "date": "2026-08-01",
     "tester": "ゆう",
     "device": "iPhone 15 Pro",
     "os": "iOS 26.5.2",
     "mode": "installed PWA",
-    "result": "FAIL"
+    "result": "PASS_WITH_NOTES"
   },
-  "knownBlockers": [
-    "Portrait preview and shutter are not simultaneously visible on the deployed build.",
-    "Persisted iOS PWA Gallery list thumbnails render as black blocks.",
-    "Camera to Gallery navigation leaves the MediaStream active.",
-    "Cancelled iOS camera startup can falsely report ready with a black preview.",
-    "Landscape capture produces portrait JPEG pixel dimensions without EXIF correction."
+  "knownBlockers": [],
+  "closedReleaseBlockers": [
+    "Portrait live composition and the Take photo action are simultaneously visible and usable.",
+    "Persisted iOS PWA Gallery list thumbnails render normally instead of as black blocks.",
+    "Camera to Gallery navigation releases the MediaStream and clears the iOS camera-use indicator.",
+    "Permission denial reports Permission denied without a Clawd overlay or false ready state, and retry recovers after permission is restored.",
+    "Landscape capture produces landscape JPEG pixel dimensions without EXIF Orientation correction."
   ],
-  "retestRequired": true,
+  "nonBlockingNotes": [
+    "In low-height landscape, the reachable sticky Take photo action overlays a large portion of the live composition. The control does not enter the captured image; separately scoped mobile camera UI/UX research and polish remain recommended."
+  ],
+  "retestRequired": false,
   "notRun": [
     "IOS-TAB Safari full matrix",
     "Android tab and installed PWA",
@@ -37,6 +44,16 @@
     "workflowRunId": 30533031222,
     "workflowRunUrl": "https://github.com/kannch8765/clawd-cam-wip/actions/runs/30533031222",
     "result": "PASS"
+  },
+  "deviceEvidence": {
+    "path": "docs/device-validation-ios-pwa-evidence.json",
+    "result": "PASS_WITH_NOTES",
+    "releaseBlockingRegressionTotals": {
+      "expected": 5,
+      "passed": 5,
+      "failed": 0,
+      "blocked": 0
+    }
   },
   "task009FeaturesImplemented": false,
   "browserE2E": {

@@ -2,13 +2,13 @@
 
 This document defines the release contract for the `0.1.0` pre-release MVP. Automated checks validate source and build artifacts; they do **not** prove real camera hardware, browser permission UI, PWA installation, a platform Share Sheet, download destinations, storage eviction, or operating-system lifecycle behavior.
 
-Release decision: **BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST**
+Release decision: **READY_WITH_MANUAL_DEVICE_CHECKS**
 
-Physical-device validation: **FAIL** for the deployed `33e4e079c6046f9354d29e8a4018c8f9c11f0c1c` IOS-PWA run on 2026-07-30. Source fixes still require redeployment and a new iPhone installed-PWA retest.
+Physical-device validation: **PASS_WITH_NOTES** for the deployed `c684843e619f493d676992ab29eaec13f6b5d13e` IOS-PWA blocker retest on 2026-08-01.
 
 Automated validation for this repair branch: **PASS_GITHUB_CI_NODE_22_24**.
 
-The long-term release contract below is preserved. Device statuses are grounded in the exact 2026-07-30 run recorded in `docs/mvp-device-validation.md`; source changes do not convert failed device checks to PASS.
+The targeted iPhone 15 Pro installed-PWA retest closed all five release-blocking regressions. Remaining environments and manual scenarios keep their explicit `NOT_RUN` status. The low-height landscape shutter overlay is recorded as non-blocking mobile camera UI/UX debt.
 
 ## Repository and CI
 
@@ -37,14 +37,15 @@ The long-term release contract below is preserved. Device statuses are grounded 
 - [x] Both local `/` and Pages `/<repository>/` builds are artifact-validated.
 - [x] Old Workbox caches are eligible for cleanup through `cleanupOutdatedCaches`.
 - [x] Hashed chunks are precached per build; no custom stale runtime cache is added.
-- [x] **PASS on deployed base:** install from the production Pages URL and reopen in standalone mode.
-- [ ] **NOT_RUN:** deploy an update over an installed older build and record activation/relaunch behavior.
+- [x] **PASS:** the repair build was deployed from `c684843e619f493d676992ab29eaec13f6b5d13e` by Pages workflow run `30535998703`.
+- [x] **PASS_WITH_NOTES:** the deployed repair build was installed and reopened as an iPhone 15 Pro standalone PWA.
+- [ ] Deploy an update over an installed older build and record activation/relaunch behavior. Status: `NOT_RUN`.
 
 Update policy: `vite-plugin-pwa` uses `registerType: autoUpdate`; the application registers immediately. A new worker may download and activate without a custom prompt. Application code does not force an immediate page reload. A browser lifecycle change or user reload can still interrupt an in-progress camera/capture/save operation, so deployments must not be described as transaction-preserving across page replacement.
 
 ## Functional MVP
 
-Automated code tests cover the stated boundaries with injected/mocked browser services. Physical behavior remains `NOT_RUN` unless recorded in the device matrix.
+Automated code tests cover the stated boundaries with injected/mocked browser services. Physical behavior remains grounded only in the device matrix and structured evidence.
 
 - [x] Camera permission is requested only after an explicit Start action.
 - [x] Front/rear selection and device switching have bounded failure/retry behavior.
@@ -57,7 +58,10 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Download uses the original full-size Blob and a short-lived object URL.
 - [x] Web Share file capability is checked before showing Share.
 - [x] Unsupported/rejected Web Share leaves Download as the fallback for a valid photo.
-- [ ] **FAIL / PARTIAL:** the 2026-07-30 IOS-PWA run passed camera start/switch/front mirror, gestures, portrait WYSIWYG, Retake, Gallery persistence/delete, Download, Share/cancellation, and install/reopen, but five release blockers remain recorded in `docs/mvp-device-validation.md`. Other environments remain `NOT_RUN`.
+- [x] **PASS_WITH_NOTES:** the deployed IOS-PWA retest closed portrait shutter reachability, Gallery thumbnail rendering, Camera → Gallery stream cleanup, permission-denial recovery, and landscape output orientation.
+- [ ] iPhone Safari tab full matrix. Status: `NOT_RUN`.
+- [ ] Android Chrome tab and installed-PWA matrices. Status: `NOT_RUN`.
+- [ ] Desktop Chromium and Firefox matrices. Status: `NOT_RUN`.
 
 ## Failure and recovery
 
@@ -71,7 +75,11 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Download DOM/object-URL failures are contained and clean up their temporary URL.
 - [x] Offline policy keeps the shell/static assets and previously saved IndexedDB gallery readable; Camera is not promised offline.
 - [x] Service Worker precache is versioned by generated revisions and outdated caches are cleaned.
-- [ ] **PARTIAL:** offline cold reopen, Download to Files, Share, and Share cancellation passed on IOS-PWA. Storage eviction/private mode, failure destinations, and Service Worker upgrade recovery remain `NOT_RUN`.
+- [x] **PASS:** permission denial displayed **Permission denied** without Clawd or a false ready state; restoring permission and retrying recovered to a real preview and successful capture.
+- [x] **PASS:** Camera → Gallery released the MediaStream and cleared the iOS camera-use indicator.
+- [x] **PASS:** offline cold reopen, Download to Files, Web Share, and share cancellation were previously observed on the same IOS-PWA device baseline.
+- [ ] Storage eviction and private-mode behavior. Status: `NOT_RUN`.
+- [ ] Service Worker cross-version upgrade recovery. Status: `NOT_RUN`.
 
 ## Accessibility
 
@@ -90,7 +98,11 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 - [x] Layout removes the 320 px minimum-width trap, wraps long text/actions, and constrains media to the viewport.
 - [x] Safe-area insets, low-height landscape, 200% zoom/narrow layout, and reduced-motion CSS contracts are present.
 - [x] Status is not communicated by color alone and no action depends on hover.
-- [ ] **FAIL / PARTIAL:** installed-PWA safe-area behavior passed, while portrait shutter reachability and landscape capture/layout failed. Screen reader, contrast tooling, OS text enlargement, 200% zoom, and the 320 px run remain `NOT_RUN`.
+- [x] **PASS:** portrait live composition and the shutter were simultaneously visible and usable on the installed iPhone PWA.
+- [x] **PASS_WITH_NOTES:** the low-height landscape shutter remained reachable but overlaid a large portion of the live composition; the control did not enter the captured image.
+- [ ] Screen reader run. Status: `NOT_RUN`.
+- [ ] Contrast tooling. Status: `NOT_RUN`.
+- [ ] OS text enlargement, 200% zoom, and 320 CSS px run. Status: `NOT_RUN`.
 
 ## Privacy and local data
 
@@ -133,7 +145,7 @@ Automated code tests cover the stated boundaries with injected/mocked browser se
 
 ## Browser smoke automation decision
 
-Playwright is **not introduced**. Existing Vitest injection boundaries already exercise camera, composition, gallery, sharing, focus, and hidden-view DOM behavior without downloading a browser binary. A small static artifact validator supplies the missing manifest, Service Worker, icon, base-path, privacy, and release-policy checks. Real camera, install, offline lifecycle, Share Sheet, download destination, and operating-system background/resume behavior remain correctly assigned to physical-device validation instead of being simulated as proof.
+Playwright is **not introduced**. Existing Vitest injection boundaries already exercise camera, composition, gallery, sharing, focus, and hidden-view DOM behavior without downloading a browser binary. A small static artifact validator supplies the missing manifest, Service Worker, icon, base-path, privacy, release-policy, and structured device-evidence checks. Real camera, install, offline lifecycle, Share Sheet, download destination, and operating-system background/resume behavior remain correctly assigned to physical-device validation instead of being simulated as proof.
 
 ## Version and release metadata
 
@@ -144,23 +156,27 @@ Playwright is **not introduced**. Existing Vitest injection boundaries already e
 
 ## Release decision
 
-**BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST**
+**READY_WITH_MANUAL_DEVICE_CHECKS**
 
-Known blockers on deployed commit `33e4e079c6046f9354d29e8a4018c8f9c11f0c1c`:
+The deployed `c684843e619f493d676992ab29eaec13f6b5d13e` iPhone 15 Pro installed-PWA blocker retest is **PASS_WITH_NOTES**. All five release-blocking regressions are closed:
 
-- portrait preview and shutter were not simultaneously visible;
-- persisted IOS-PWA Gallery thumbnails rendered as black blocks;
-- Camera → Gallery left the MediaStream active;
-- cancelled camera startup could falsely report ready;
-- landscape capture produced portrait JPEG pixel dimensions.
+- portrait preview and shutter are simultaneously visible and usable;
+- persisted IOS-PWA Gallery thumbnails render normally;
+- Camera → Gallery releases the MediaStream;
+- permission denial reports **Permission denied** without Clawd or a false ready state, and retry recovers;
+- landscape capture produces landscape pixels (`1439 x 1080`) without EXIF Orientation dependency.
 
-Even after that automated gate passes, release remains blocked until redeployment and a complete iPhone retest.
+Non-blocking UI/UX debt:
 
-Non-blocking follow-up:
+- In low-height landscape, the sticky **Take photo** action overlays a large portion of the live composition. It remains reachable, does not enter the captured image, and should receive separately scoped mobile camera UX research and polish.
 
-- Run every row in `docs/mvp-device-validation.md` against the exact deployed commit.
-- Record at least iPhone Safari tab/PWA, Android Chrome tab/PWA, desktop Chromium, and desktop Firefox evidence.
-- Record Service Worker old-to-new update behavior separately.
-- Replace the reference/test Clawd with approved production artwork in a separately scoped asset task before describing it as production artwork.
+Remaining manual coverage keeps its explicit `NOT_RUN` status:
 
-A future release becomes **BLOCKED** if it is presented as fully device-validated while the matrix remains `NOT_RUN`, if the reference overlay is presented as final production artwork, or if automated checks fail.
+- iPhone Safari tab full matrix;
+- Android tab and installed PWA;
+- desktop Chromium and Firefox;
+- keyboard and screen reader accessibility;
+- visible focus, contrast, 200 percent zoom, and text enlargement;
+- Service Worker cross-version upgrade.
+
+The release must not be presented as fully device-validated across every matrix row. The reference/test Clawd must not be described as final production artwork. A future release becomes blocked if automated checks fail or if any newly observed release-blocking regression is unresolved.

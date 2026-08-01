@@ -391,6 +391,7 @@ async function inspectReleasePolicy() {
     checklist,
     deviceMatrix,
     statusText,
+    deviceEvidenceText,
     packageText,
     focusStyleText,
   ] = await Promise.all([
@@ -404,35 +405,93 @@ async function inspectReleasePolicy() {
       'utf8',
     ),
     readFile(path.join(repositoryRoot, 'docs/mvp-release-status.json'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'docs/device-validation-ios-pwa-evidence.json'),
+      'utf8',
+    ),
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
     readFile(path.join(repositoryRoot, 'src/styles/accessibility.css'), 'utf8'),
   ]);
 
   const status = JSON.parse(statusText);
+  const deviceEvidence = JSON.parse(deviceEvidenceText);
   const packageMetadata = JSON.parse(packageText);
 
   assert.equal(status.schemaVersion, 1);
   assert.equal(status.application, 'ClawdCam');
   assert.equal(status.version, packageMetadata.version);
-  const allowedAutomatedCheckStates = new Set([
-    'PENDING_GITHUB_CI_NODE_22_24',
-    'PASS_GITHUB_CI_NODE_22_24',
-    'FAIL_GITHUB_CI_NODE_22_24',
-  ]);
-  assert.ok(
-    allowedAutomatedCheckStates.has(status.automatedChecks),
-    'Automated check status is not a recognized device-repair state',
-  );
-  assert.equal(status.physicalDeviceValidation, 'FAIL');
+  assert.equal(status.automatedChecks, 'PASS_GITHUB_CI_NODE_22_24');
+  assert.equal(status.physicalDeviceValidation, 'PASS_WITH_NOTES');
+  assert.equal(status.releaseDecision, 'READY_WITH_MANUAL_DEVICE_CHECKS');
+  assert.equal(status.testedDeployment.result, 'PASS_WITH_NOTES');
   assert.equal(
-    status.releaseDecision,
-    'BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST',
+    status.testedDeployment.commit,
+    'c684843e619f493d676992ab29eaec13f6b5d13e',
   );
-  assert.equal(status.testedDeployment.result, 'FAIL');
-  assert.equal(status.retestRequired, true);
-  assert.equal(status.knownBlockers.length, 5);
+  assert.equal(
+    status.testedDeployment.sourceCommit,
+    '9d4807ef86d383e429759dc22c844c6f2154684e',
+  );
+  assert.equal(status.testedDeployment.pagesWorkflowRunId, 30535998703);
+  assert.equal(status.retestRequired, false);
+  assert.deepEqual(status.knownBlockers, []);
+  assert.equal(status.closedReleaseBlockers.length, 5);
+  assert.ok(
+    status.nonBlockingNotes.some((note) =>
+      note.includes('low-height landscape'),
+    ),
+    'Release status lacks the landscape shutter UI/UX note',
+  );
+  assert.equal(status.deviceEvidence.result, 'PASS_WITH_NOTES');
+  assert.deepEqual(status.deviceEvidence.releaseBlockingRegressionTotals, {
+    expected: 5,
+    passed: 5,
+    failed: 0,
+    blocked: 0,
+  });
   assert.equal(status.browserE2E.introduced, false);
   assert.equal(status.task009FeaturesImplemented, false);
+
+  assert.equal(deviceEvidence.schemaVersion, 1);
+  assert.equal(deviceEvidence.application, 'ClawdCam');
+  assert.equal(deviceEvidence.version, packageMetadata.version);
+  assert.equal(
+    deviceEvidence.deployment.commit,
+    'c684843e619f493d676992ab29eaec13f6b5d13e',
+  );
+  assert.equal(
+    deviceEvidence.deployment.sourceCommit,
+    '9d4807ef86d383e429759dc22c844c6f2154684e',
+  );
+  assert.equal(deviceEvidence.deployment.pagesWorkflowRunId, 30535998703);
+  assert.equal(deviceEvidence.deployment.result, 'PASS');
+  assert.equal(deviceEvidence.environment.device, 'iPhone 15 Pro');
+  assert.equal(deviceEvidence.environment.os, 'iOS 26.5.2');
+  assert.equal(deviceEvidence.environment.mode, 'installed PWA');
+  assert.equal(deviceEvidence.result, 'PASS_WITH_NOTES');
+  assert.equal(deviceEvidence.releaseBlockingRegressions.length, 5);
+  assert.ok(
+    deviceEvidence.releaseBlockingRegressions.every(
+      (regression) => regression.result === 'PASS',
+    ),
+    'Every release-blocking regression must be recorded as PASS',
+  );
+  assert.deepEqual(deviceEvidence.releaseBlockingRegressionTotals, {
+    expected: 5,
+    passed: 5,
+    failed: 0,
+    blocked: 0,
+  });
+  assert.equal(
+    deviceEvidence.recommendedReleaseDecision,
+    'READY_WITH_MANUAL_DEVICE_CHECKS',
+  );
+  assert.ok(
+    deviceEvidence.nonBlockingNotes.some((note) =>
+      note.includes('low-height landscape'),
+    ),
+    'Device evidence lacks the landscape shutter UI/UX note',
+  );
 
   const headingFocusRule = focusStyleText.match(
     /h2\[tabindex=['"]-1['"]\]:focus-visible\s*\{([\s\S]*?)\}/,
@@ -485,10 +544,10 @@ async function inspectReleasePolicy() {
   }
 
   assert.ok(
-    checklist.includes('BLOCKED_PENDING_REDEPLOY_AND_DEVICE_RETEST') &&
-      checklist.includes('Physical-device validation: **FAIL**') &&
-      checklist.includes('redeployment') &&
-      checklist.includes('iPhone retest'),
+    checklist.includes('READY_WITH_MANUAL_DEVICE_CHECKS') &&
+      checklist.includes('Physical-device validation: **PASS_WITH_NOTES**') &&
+      checklist.includes('five release-blocking regressions') &&
+      checklist.includes('non-blocking mobile camera UI/UX debt'),
     'Checklist release status is inconsistent',
   );
   assert.ok(
@@ -510,8 +569,15 @@ async function inspectReleasePolicy() {
     );
   }
   assert.ok(
+    deviceMatrix.includes('## 2026-08-01 IOS-PWA blocker retest') &&
+      deviceMatrix.includes('`c684843e619f493d676992ab29eaec13f6b5d13e`') &&
+      deviceMatrix.includes('1439 x 1080') &&
+      deviceMatrix.includes('PASS_WITH_NOTES'),
+    'Device matrix lacks the deployed blocker-retest evidence',
+  );
+  assert.ok(
     (deviceMatrix.match(/NOT_RUN/g) ?? []).length >= 60,
-    'Device matrix must begin with explicit NOT_RUN results',
+    'Unexecuted device and accessibility coverage must remain explicit',
   );
 }
 
