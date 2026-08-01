@@ -432,7 +432,11 @@ async function inspectReleasePolicy() {
     status.testedDeployment.sourceCommit,
     '9d4807ef86d383e429759dc22c844c6f2154684e',
   );
-  assert.equal(status.testedDeployment.pagesWorkflowRunId, 30535998703);
+  assert.equal(status.testedDeployment.pagesWorkflowRunId, 30536547832);
+  assert.equal(
+    status.testedDeployment.pagesWorkflowRunUrl,
+    'https://github.com/kannch8765/clawd-cam-wip/actions/runs/30536547832',
+  );
   assert.equal(status.retestRequired, false);
   assert.deepEqual(status.knownBlockers, []);
   assert.equal(status.closedReleaseBlockers.length, 5);
@@ -463,7 +467,11 @@ async function inspectReleasePolicy() {
     deviceEvidence.deployment.sourceCommit,
     '9d4807ef86d383e429759dc22c844c6f2154684e',
   );
-  assert.equal(deviceEvidence.deployment.pagesWorkflowRunId, 30535998703);
+  assert.equal(deviceEvidence.deployment.pagesWorkflowRunId, 30536547832);
+  assert.equal(
+    deviceEvidence.deployment.pagesWorkflowRunUrl,
+    'https://github.com/kannch8765/clawd-cam-wip/actions/runs/30536547832',
+  );
   assert.equal(deviceEvidence.deployment.result, 'PASS');
   assert.equal(deviceEvidence.environment.device, 'iPhone 15 Pro');
   assert.equal(deviceEvidence.environment.os, 'iOS 26.5.2');
@@ -547,7 +555,8 @@ async function inspectReleasePolicy() {
     checklist.includes('READY_WITH_MANUAL_DEVICE_CHECKS') &&
       checklist.includes('Physical-device validation: **PASS_WITH_NOTES**') &&
       checklist.includes('five release-blocking regressions') &&
-      checklist.includes('non-blocking mobile camera UI/UX debt'),
+      checklist.includes('non-blocking mobile camera UI/UX debt') &&
+      checklist.includes('actions/runs/30536547832'),
     'Checklist release status is inconsistent',
   );
   assert.ok(
@@ -572,7 +581,8 @@ async function inspectReleasePolicy() {
     deviceMatrix.includes('## 2026-08-01 IOS-PWA blocker retest') &&
       deviceMatrix.includes('`c684843e619f493d676992ab29eaec13f6b5d13e`') &&
       deviceMatrix.includes('1439 x 1080') &&
-      deviceMatrix.includes('PASS_WITH_NOTES'),
+      deviceMatrix.includes('PASS_WITH_NOTES') &&
+      deviceMatrix.includes('actions/runs/30536547832'),
     'Device matrix lacks the deployed blocker-retest evidence',
   );
   assert.ok(

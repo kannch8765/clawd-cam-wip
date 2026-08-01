@@ -55,7 +55,7 @@ Deployed build:
 - URL: `https://kannch8765.github.io/clawd-cam-wip/`
 - Deployed commit: `c684843e619f493d676992ab29eaec13f6b5d13e`
 - Source repair commit: `9d4807ef86d383e429759dc22c844c6f2154684e`
-- Pages workflow run: `30535998703`
+- Pages workflow run: [`30536547832`](https://github.com/kannch8765/clawd-cam-wip/actions/runs/30536547832) (build and deploy jobs succeeded)
 - Device: iPhone 15 Pro
 - OS: iOS 26.5.2
 - Mode: installed PWA using Safari/WebKit bundled with iOS 26.5.2

@@ -37,7 +37,7 @@ The targeted iPhone 15 Pro installed-PWA retest closed all five release-blocking
 - [x] Both local `/` and Pages `/<repository>/` builds are artifact-validated.
 - [x] Old Workbox caches are eligible for cleanup through `cleanupOutdatedCaches`.
 - [x] Hashed chunks are precached per build; no custom stale runtime cache is added.
-- [x] **PASS:** the repair build was deployed from `c684843e619f493d676992ab29eaec13f6b5d13e` by Pages workflow run `30535998703`.
+- [x] **PASS:** the repair build was deployed from `c684843e619f493d676992ab29eaec13f6b5d13e` by Pages workflow run [`30536547832`](https://github.com/kannch8765/clawd-cam-wip/actions/runs/30536547832); both the build and deploy jobs succeeded.
 - [x] **PASS_WITH_NOTES:** the deployed repair build was installed and reopened as an iPhone 15 Pro standalone PWA.
 - [ ] Deploy an update over an installed older build and record activation/relaunch behavior. Status: `NOT_RUN`.
 
