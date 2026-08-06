@@ -1,11 +1,15 @@
 import type { CameraCaptureSource } from '../camera/cameraTypes';
+import {
+  createCameraFraming,
+  DEFAULT_CAMERA_FRAMING,
+} from '../camera/focalPresets';
 import type {
   OverlayAssetDescriptor,
   OverlayTransform,
 } from '../overlay/overlayTypes';
 import { CAPTURE_MIME_TYPE, CAPTURE_QUALITY } from './captureAdapter';
 import {
-  calculateCoverCrop,
+  calculateDigitalFramingCrop,
   calculateOutputSize,
   calculateOverlayDrawGeometry,
 } from './captureGeometry';
@@ -57,6 +61,7 @@ export function freezeCaptureSnapshot({
   previewHeight,
   overlayAsset,
   overlayTransform,
+  cameraFraming = DEFAULT_CAMERA_FRAMING,
   capturedAt,
 }: CaptureSnapshotInput): CaptureSnapshot {
   if (!isCaptureSourceUsable(camera)) {
@@ -68,11 +73,15 @@ export function freezeCaptureSnapshot({
 
   const videoWidth = camera.video.videoWidth;
   const videoHeight = camera.video.videoHeight;
-  const crop = calculateCoverCrop({
+  const framing = createCameraFraming(cameraFraming.presetId);
+  const crop = calculateDigitalFramingCrop({
     videoWidth,
     videoHeight,
     previewWidth,
     previewHeight,
+    zoomRatio: framing.zoomRatio,
+    centerX: framing.centerX,
+    centerY: framing.centerY,
   });
   const output = calculateOutputSize(crop);
 
@@ -82,6 +91,9 @@ export function freezeCaptureSnapshot({
     videoHeight,
     previewWidth,
     previewHeight,
+    focalPresetId: framing.presetId,
+    digitalZoomRatio: framing.zoomRatio,
+    framingCenter: { x: framing.centerX, y: framing.centerY },
     crop,
     output,
     facingMode: camera.facingMode,

@@ -6,6 +6,7 @@ import {
   type RefObject,
 } from 'react';
 import type { CameraCaptureSource } from '../camera/cameraTypes';
+import type { CameraFraming } from '../camera/focalPresets';
 import type {
   OverlayAssetDescriptor,
   OverlayTransform,
@@ -37,6 +38,7 @@ export type PhotoCaptureState =
 interface UsePhotoCaptureInput {
   asset: OverlayAssetDescriptor;
   transform: OverlayTransform;
+  cameraFraming?: Readonly<CameraFraming>;
   stageRef: RefObject<HTMLElement | null>;
   getCameraCaptureSource(): CameraCaptureSource | null;
   isCameraCaptureSourceCurrent(source: CameraCaptureSource): boolean;
@@ -92,6 +94,7 @@ export function measureContentBox(element: HTMLElement): {
 export function usePhotoCapture({
   asset,
   transform,
+  cameraFraming,
   stageRef,
   getCameraCaptureSource,
   isCameraCaptureSourceCurrent,
@@ -205,6 +208,7 @@ export function usePhotoCapture({
         previewHeight: preview.height,
         overlayAsset: asset,
         overlayTransform: transform,
+        cameraFraming,
         capturedAt: adapter.now(),
       });
     } catch (error) {
@@ -261,6 +265,7 @@ export function usePhotoCapture({
   }, [
     adapter,
     asset,
+    cameraFraming,
     getCameraCaptureSource,
     isCameraCaptureSourceCurrent,
     revokeCurrentObjectUrl,

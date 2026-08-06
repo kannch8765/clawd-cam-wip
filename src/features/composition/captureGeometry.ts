@@ -12,7 +12,7 @@ import {
 export const CAPTURE_MIN_LONG_EDGE = 960;
 export const CAPTURE_MAX_LONG_EDGE = 2048;
 
-interface CoverCropInput {
+export interface CoverCropInput {
   videoWidth: number;
   videoHeight: number;
   previewWidth: number;
@@ -50,6 +50,86 @@ export function calculateCoverCrop({
 
   return {
     coverScale,
+    cropX,
+    cropY,
+    visibleSourceWidth,
+    visibleSourceHeight,
+  };
+}
+
+export interface DigitalFramingCropInput extends CoverCropInput {
+  zoomRatio: number;
+  centerX?: number;
+  centerY?: number;
+}
+
+function assertNormalizedCenter(value: number, label: string): void {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw new CaptureError(
+      'invalid-geometry',
+      `${label} must be a finite number between zero and one.`,
+    );
+  }
+}
+
+export function calculateDigitalFramingCrop({
+  videoWidth,
+  videoHeight,
+  previewWidth,
+  previewHeight,
+  zoomRatio,
+  centerX = 0.5,
+  centerY = 0.5,
+}: DigitalFramingCropInput): CaptureCropGeometry {
+  assertPositiveFinite(zoomRatio, 'Digital zoom ratio');
+  if (zoomRatio < 1) {
+    throw new CaptureError(
+      'invalid-geometry',
+      'Digital zoom ratio must be at least one.',
+    );
+  }
+  assertNormalizedCenter(centerX, 'Framing center X');
+  assertNormalizedCenter(centerY, 'Framing center Y');
+
+  const baseCrop = calculateCoverCrop({
+    videoWidth,
+    videoHeight,
+    previewWidth,
+    previewHeight,
+  });
+  const visibleSourceWidth = baseCrop.visibleSourceWidth / zoomRatio;
+  const visibleSourceHeight = baseCrop.visibleSourceHeight / zoomRatio;
+  const cropX =
+    baseCrop.cropX +
+    (baseCrop.visibleSourceWidth - visibleSourceWidth) * centerX;
+  const cropY =
+    baseCrop.cropY +
+    (baseCrop.visibleSourceHeight - visibleSourceHeight) * centerY;
+
+  const values = [
+    baseCrop.coverScale * zoomRatio,
+    cropX,
+    cropY,
+    visibleSourceWidth,
+    visibleSourceHeight,
+  ];
+  if (
+    values.some((value) => !Number.isFinite(value)) ||
+    visibleSourceWidth <= 0 ||
+    visibleSourceHeight <= 0 ||
+    cropX < 0 ||
+    cropY < 0 ||
+    cropX + visibleSourceWidth > videoWidth ||
+    cropY + visibleSourceHeight > videoHeight
+  ) {
+    throw new CaptureError(
+      'invalid-geometry',
+      'Digital framing produced an invalid source crop.',
+    );
+  }
+
+  return {
+    coverScale: baseCrop.coverScale * zoomRatio,
     cropX,
     cropY,
     visibleSourceWidth,
