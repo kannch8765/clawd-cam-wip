@@ -2,6 +2,7 @@ import type {
   CameraCaptureSource,
   CameraFacingMode,
 } from '../camera/cameraTypes';
+import type { CameraFraming, FocalPresetId } from '../camera/focalPresets';
 import type {
   OverlayAssetDescriptor,
   OverlayTransform,
@@ -61,6 +62,9 @@ export interface CaptureSnapshot {
   videoHeight: number;
   previewWidth: number;
   previewHeight: number;
+  focalPresetId: FocalPresetId;
+  digitalZoomRatio: number;
+  framingCenter: { x: number; y: number };
   crop: CaptureCropGeometry;
   output: CaptureOutputSize;
   facingMode: CameraFacingMode;
@@ -106,5 +110,6 @@ export interface CaptureSnapshotInput {
   previewHeight: number;
   overlayAsset: OverlayAssetDescriptor;
   overlayTransform: OverlayTransform;
+  cameraFraming?: Readonly<CameraFraming>;
   capturedAt: Date;
 }

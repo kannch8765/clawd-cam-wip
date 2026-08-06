@@ -1,0 +1,52 @@
+.camera-preview {
+  transform: scale(var(--camera-digital-zoom, 1))
+    scaleX(var(--camera-mirror-scale, 1));
+  transform-origin: center;
+}
+
+.focal-preset-controls {
+  min-width: 0;
+  margin: 1rem 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.focal-preset-controls legend {
+  padding: 0;
+  color: #6d5d4a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.focal-preset-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.focal-preset-button {
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 1px solid #c5af91;
+  border-radius: 999px;
+  padding: 0.55rem 0.35rem;
+  background: #fffdf8;
+  color: #4b3e32;
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.focal-preset-button--selected {
+  border-color: #29241f;
+  background: #29241f;
+  color: #fffdf8;
+}
+
+@media (max-width: 420px) {
+  .focal-preset-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

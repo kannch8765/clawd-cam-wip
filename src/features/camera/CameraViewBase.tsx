@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import { CaptureResult } from '../composition/CaptureResult';
 import { browserCompositionAdapter } from '../composition/captureAdapter';
 import type { CompositionAdapter } from '../composition/compositionTypes';
@@ -10,6 +16,12 @@ import { OverlayPreview } from '../overlay/OverlayPreview';
 import { REFERENCE_CLAWD_ASSET } from '../overlay/overlayAssets';
 import { useOverlayController } from '../overlay/useOverlayController';
 import { browserCameraAdapter } from './cameraAdapter';
+import {
+  createCameraFraming,
+  DEFAULT_FOCAL_PRESET_ID,
+  FOCAL_PRESETS,
+  type FocalPresetId,
+} from './focalPresets';
 import type { CameraAdapter, CameraState } from './cameraTypes';
 import { useCamera } from './useCamera';
 
@@ -109,6 +121,10 @@ export function CameraView({
   const internalHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const activeHeadingRef = headingRef ?? internalHeadingRef;
   const wasCapturedRef = useRef(false);
+  const [focalPresetId, setFocalPresetId] = useState<FocalPresetId>(
+    DEFAULT_FOCAL_PRESET_ID,
+  );
+  const cameraFraming = createCameraFraming(focalPresetId);
   const {
     state,
     videoRef,
@@ -122,6 +138,7 @@ export function CameraView({
   const photoCapture = usePhotoCapture({
     asset: REFERENCE_CLAWD_ASSET,
     transform,
+    cameraFraming,
     stageRef,
     getCameraCaptureSource,
     isCameraCaptureSourceCurrent,
@@ -146,6 +163,10 @@ export function CameraView({
     photoCapture.isAssetReady &&
     !isCapturing &&
     !isCaptured;
+  const previewStyle = {
+    '--camera-digital-zoom': String(cameraFraming.zoomRatio),
+    '--camera-mirror-scale': isMirrored ? '-1' : '1',
+  } as CSSProperties;
   const previewClassName = [
     'camera-preview',
     isMirrored ? 'camera-preview--mirrored' : '',
@@ -172,6 +193,9 @@ export function CameraView({
           ref={videoRef}
           className={previewClassName}
           data-mirrored={isMirrored ? 'true' : 'false'}
+          data-focal-preset={focalPresetId}
+          data-digital-zoom={cameraFraming.zoomRatio}
+          style={previewStyle}
           aria-label="Live camera preview"
           muted
           playsInline
@@ -251,6 +275,39 @@ export function CameraView({
 
             {isReady && (
               <>
+                <fieldset
+                  className="focal-preset-controls"
+                  disabled={isCapturing}
+                >
+                  <legend>Equivalent framing · digital crop</legend>
+                  <div
+                    className="focal-preset-options"
+                    role="group"
+                    aria-label="Digital equivalent framing presets"
+                  >
+                    {FOCAL_PRESETS.map((preset) => {
+                      const isSelected = preset.id === focalPresetId;
+                      return (
+                        <button
+                          key={preset.id}
+                          className={[
+                            'focal-preset-button',
+                            isSelected ? 'focal-preset-button--selected' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          type="button"
+                          aria-pressed={isSelected}
+                          data-zoom-ratio={preset.zoomRatio}
+                          onClick={() => setFocalPresetId(preset.id)}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
                 <p className="camera-details">
                   {state.facingMode === 'user' ? 'Front' : 'Rear'} camera ·{' '}
                   {state.dimensions.width} × {state.dimensions.height}
